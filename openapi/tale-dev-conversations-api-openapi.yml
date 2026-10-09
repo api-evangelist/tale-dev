@@ -1,0 +1,2773 @@
+openapi: 3.2.0
+info:
+  title: Tale Dev Conversations API
+  version: 3.27.0
+  contact:
+    name: Tale
+    url: https://tale.dev
+  description: 'Operations tagged Conversations across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: '{origin}'
+  description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+  variables:
+    origin:
+      default: https://your-host.example.com
+      description: Scheme and host of the Tale deployment
+security:
+- bearerAuth: []
+tags:
+- name: Conversations
+  description: Mirroring external conversations into Inbox — versioned snapshots, reply claims, delivery receipts and staged uploads.
+paths:
+  /api/v1/conversations/sync:
+    get:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: source
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_-]{0,59}$
+        description: Stable source slug, e.g. vatplus
+      - name: externalId
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 256
+        description: Stable source conversation ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: getConversationSourceState
+      summary: Read an integration snapshot receipt
+      description: Returns the current source revision, the bound contact (`contactId`, the row; `externalContactId`, its current external id), its `contactStatus` (`active` | `trashed` | `missing`), whether the source tore the mirror down (`sourceDeleted`, with the Inbox `status`) and attachment refs for safe crash recovery — an engine that resumes reads `sourceDeleted` before pushing its next snapshot, because a content snapshot onto a torn-down mirror answers 409 `CONVERSATION_CLOSED` at any version. A `trashed` status means the contact was deleted and further content snapshots answer 409 `CONVERSATION_CONTACT_TRASHED` until it is restored (`POST /api/v1/contacts/{id}/restore`). `GET /api/v1/conversations?source=` lists every mirror. An unknown or differently owned source returns a null snapshot.
+      responses:
+        '200':
+          description: Current source state
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - snapshot
+                properties:
+                  snapshot:
+                    type:
+                    - object
+                    - 'null'
+                    required:
+                    - conversationId
+                    - organizationId
+                    - version
+                    - externalContactId
+                    - contactId
+                    - contactStatus
+                    - sourceDeleted
+                    - status
+                    - attachments
+                    properties:
+                      conversationId:
+                        type: string
+                      organizationId:
+                        type: string
+                      version:
+                        type: integer
+                      externalContactId:
+                        type: string
+                        description: 'The bound contact’s current `externalId`: the one named on first mirror, following a rename of that same contact (a PATCH of its `externalId`, or a snapshot naming the new id) — never re-resolved to a different row.'
+                      contactId:
+                        type:
+                        - string
+                        - 'null'
+                        description: 'The bound contact row — `GET /api/v1/contacts/{id}` takes it; null when no contact row is linked (`contactStatus: "missing"`).'
+                      contactStatus:
+                        type: string
+                        enum:
+                        - active
+                        - trashed
+                        - missing
+                        description: 'The linked contact’s state: `active`, `trashed` (a `DELETE /contacts/{id}` retired it — further content snapshots answer 409 `CONVERSATION_CONTACT_TRASHED` until it is restored with `POST /api/v1/contacts/{id}/restore` or in the app; a `deleted` teardown closes the mirror but does not lift the refusal), or `missing` (no contact row is linked).'
+                      sourceDeleted:
+                        type: boolean
+                        description: 'The source tore the mirror down with a `deleted` snapshot: the Inbox thread is closed, keeps its messages, and a later content snapshot answers 409 `CONVERSATION_CLOSED` at any version — mirror the source conversation under a new `externalId` to start again. An engine that resumes from this receipt reads it before pushing its next snapshot; it is the one field that says a teardown landed.'
+                      status:
+                        type:
+                        - string
+                        - 'null'
+                        description: 'The Inbox conversation’s status — `closed` once torn down; null only when the Inbox row itself is gone (`contactStatus: "missing"`).'
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - id
+                          - storageId
+                          properties:
+                            id:
+                              type: string
+                            storageId:
+                              type: string
+                              description: Opaque — persist and echo it unchanged; its shape is not part of the contract
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '304':
+          description: Not Modified — `If-None-Match` named the current `ETag`, so the body is not sent
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: '`X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: synchronizeConversationSource
+      summary: Apply a complete native Inbox source snapshot
+      description: 'Creates an API-channel Inbox conversation linked to exactly one contact.externalId — a contact that must already exist: `externalContactId` names the `externalId` of a contact in this organization (create it through `POST /api/v1/contacts` first); an id no contact carries answers 404 `CONTACT_NOT_FOUND` and one that more than one contact carries 409 `CONTACT_AMBIGUOUS`, nothing applied. A snapshot never re-homes a conversation: it is bound to a contact ROW, so a contact re-keyed in the CRM (a PATCH of its `externalId`) keeps its conversations — a snapshot naming the contact’s current id applies and the receipt follows it — while an `externalContactId` that names a different contact, or no live one, answers 409 `CONVERSATION_CONTACT_CONFLICT` naming the id the conversation is bound to; deleting the contact and recreating it under the same `externalId` (a common CRM re-import) is a different row and never transfers the thread to the new person. A content snapshot for a conversation whose contact has been moved to the trash answers 409 `CONVERSATION_CONTACT_TRASHED` — restore the contact (`POST /api/v1/contacts/{id}/restore`) to continue it; a `deleted` teardown closes the mirror but does not reopen it, so a later content snapshot answers the same 409 while the contact stays in the trash; the `contactStatus` on the `GET` receipt reports this. Source + externalId is owned by the API key user; key rotation preserves ownership. A newer integer version replaces only source-receipted messages; an older version does nothing; the same version with different content returns 409. Message IDs must be unique. A message that began life as a native Inbox reply — one this integration claimed through the deliveries lane — carries `taleMessageId`, that reply’s `messageId`, and must have been acknowledged under its `externalId` first (409 `DELIVERY_UNACKNOWLEDGED` otherwise); a message without `taleMessageId` is the source’s own, whatever `isCustomer` says. Every attachment a message names must have been staged through `POST /api/v1/conversations/uploads` by this key user and still be within its window — one never staged, lapsed, malformed or another organization’s answers 400 `ATTACHMENT_NOT_STAGED`, another service user’s upload in this organization 403 `ATTACHMENT_NOT_OWNED` — at the declared `size` (400 `ATTACHMENT_SIZE_MISMATCH` when the landed bytes disagree) — nothing of the snapshot is applied on any of these refusals. `replyConstraints` bounds what a person’s Inbox reply to the conversation may carry — body length, attachment count, size and extensions — and is enforced when that reply is written, never against a snapshot. A deleted snapshot closes the source and has no messages: it is not content, so it applies at the stored version or any higher one (a source whose versions ran out can still tear its mirror down) and replays as a no-op once the source is torn down; the messages the source mirrored stay in the Inbox as the closed conversation’s record — a teardown never deletes them (`DELETE /api/v1/contacts/{id}` and the erasure lane are the deletion doors). A torn-down mirror stays down: a later content snapshot at any version answers 409 `CONVERSATION_CLOSED` (the receipt’s `sourceDeleted` says so) — mirror the source conversation under a new `externalId` to start again. Unacknowledged office replies are preserved. Unknown keys are refused. JSON is limited to 8 MiB.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  pattern: ^[a-z][a-z0-9_-]{0,59}$
+                externalId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                externalContactId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                  description: 'The `externalId` of an EXISTING contact in this organization — the snapshot links its conversation to that contact and never creates one: create the contact through `POST /api/v1/contacts` first. An id no contact carries answers 404 `CONTACT_NOT_FOUND`; one more than one contact carries 409 `CONTACT_AMBIGUOUS`. A trashed contact does not count.'
+                version:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                subject:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                status:
+                  type: string
+                  enum:
+                  - open
+                  - closed
+                deleted:
+                  default: false
+                  type: boolean
+                replyConstraints:
+                  default: {}
+                  type: object
+                  properties:
+                    minBodyChars:
+                      default: 1
+                      type: integer
+                      minimum: 0
+                      maximum: 100
+                    maxBodyChars:
+                      default: 20000
+                      type: integer
+                      minimum: 1
+                      maximum: 20000
+                    maxAttachments:
+                      default: 10
+                      type: integer
+                      minimum: 0
+                      maximum: 10
+                    maxAttachmentBytes:
+                      default: 31457280
+                      type: integer
+                      minimum: 1
+                      maximum: 31457280
+                    attachmentExtensions:
+                      maxItems: 100
+                      type: array
+                      items:
+                        type: string
+                        pattern: ^[a-z0-9]+$
+                  additionalProperties: false
+                  description: What a person’s Inbox reply to this conversation may carry — body length (`minBodyChars`, `maxBodyChars`), attachment count, size and file extensions. The Inbox enforces it when the reply is written and refuses one that breaks it; no snapshot is ever refused by it. Omitted, the defaults shown apply.
+                messages:
+                  maxItems: 200
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      externalId:
+                        type: string
+                        minLength: 1
+                        maxLength: 256
+                      taleMessageId:
+                        type: string
+                        minLength: 1
+                        maxLength: 256
+                      content:
+                        type: string
+                        maxLength: 20000
+                      format:
+                        default: plain
+                        type: string
+                        enum:
+                        - plain
+                        - markdown
+                      isCustomer:
+                        type: boolean
+                      authorName:
+                        type: string
+                        maxLength: 300
+                      createdAt:
+                        type: integer
+                        minimum: 0
+                        maximum: 8640000000000000
+                      attachments:
+                        default: []
+                        maxItems: 10
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            externalId:
+                              type: string
+                              minLength: 1
+                              maxLength: 256
+                            storageId:
+                              type: string
+                              minLength: 1
+                              maxLength: 1024
+                            fileName:
+                              type: string
+                              minLength: 1
+                              maxLength: 300
+                            contentType:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            size:
+                              type: integer
+                              minimum: 0
+                              maximum: 31457280
+                          required:
+                          - storageId
+                          - fileName
+                          - contentType
+                          - size
+                          additionalProperties: false
+                    required:
+                    - externalId
+                    - content
+                    - isCustomer
+                    - authorName
+                    - createdAt
+                    additionalProperties: false
+              required:
+              - source
+              - externalId
+              - externalContactId
+              - version
+              - subject
+              - status
+              - messages
+              additionalProperties: false
+      responses:
+        '200':
+          description: Applied or replayed snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - conversationId
+                - applied
+                properties:
+                  conversationId:
+                    type:
+                    - string
+                    - 'null'
+                  applied:
+                    type: boolean
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: Invalid body (`INVALID_BODY`), an attachment never staged, whose window lapsed or whose `storageId` this door never handed out (`ATTACHMENT_NOT_STAGED`), or one whose declared size the landed bytes contradict (`ATTACHMENT_SIZE_MISMATCH`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: The contact `externalContactId` names does not exist (`CONTACT_NOT_FOUND`), no snapshot ever named the source (`CONVERSATION_SOURCE_NOT_FOUND`), or the delivery or attachment is absent (`DELIVERY_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds 8 MiB — this operation’s own cap, above the door’s 1 MiB default, sized for a whole source snapshot (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/assignment:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: assignConversationTeam
+      summary: Queue a mirrored conversation to a team
+      description: 'Sets the team a conversation this key user mirrored is queued to, or clears it with `teamId: null` — the team’s members can then open it in the Inbox, and each of them is notified. The conversation is named like every mirror route, by `source` and its `externalId`; team ids come from `GET /api/v1/teams`. Admin and owner keys only — the Inbox’s own rule for who may assign; an editor key answers 403 `ROLE_FORBIDDEN` and can route by a governance rule for its source instead. A team outside the organization answers 400 `TEAM_NOT_IN_ORG`; a mirror no snapshot created answers 404 `CONVERSATION_NOT_FOUND`, one another service user owns 403 `INTEGRATION_NOT_OWNED`. Setting the team it already has changes nothing. The person assignee is not touched. Unknown keys are refused.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - source
+              - externalId
+              - teamId
+              additionalProperties: false
+              properties:
+                source:
+                  type: string
+                  pattern: ^[a-z][a-z0-9_-]{0,59}$
+                externalId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                teamId:
+                  type:
+                  - string
+                  - 'null'
+                  minLength: 1
+                  maxLength: 128
+                  description: A team id from `GET /api/v1/teams`; `null` clears the team
+      responses:
+        '200':
+          description: The conversation’s team as it now stands
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - conversationId
+                - assigneeTeamId
+                properties:
+                  conversationId:
+                    type: string
+                  assigneeTeamId:
+                    type:
+                    - string
+                    - 'null'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: Invalid body (`INVALID_BODY`), or a team outside this organization (`TEAM_NOT_IN_ORG`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A role below admin (`ROLE_FORBIDDEN`), or an integration another service user owns (`INTEGRATION_NOT_OWNED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: No conversation is mirrored under that `source` and `externalId` (`CONVERSATION_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '413':
+          description: The body exceeds this operation’s byte cap — 1 MiB unless the description says otherwise (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations:
+    get:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: source
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_-]{0,59}$
+        description: The source whose mirrors to list
+      - name: contactStatus
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - active
+          - trashed
+          - missing
+        description: One contact state to narrow to
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: The previous page’s `continueCursor`, unchanged — opaque; omit for the first page. A value this list did not answer is refused with 400 `INVALID_CURSOR` rather than read as the first page
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+        description: Page size, 1..200 (default 50; out-of-range numbers are clamped, a value that is not a number answers 400 `INVALID_LIMIT`)
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: listConversations
+      summary: List the conversations you mirrored
+      description: 'Every conversation this key user mirrored under a source, newest first — the reconciliation read: `conversationId`, the source `externalId`, the bound contact (`contactId`, the row; `externalContactId`, its current external id) and its `contactStatus`, the stored `version`, whether the source tore the mirror down (`sourceDeleted`), and the Inbox `status` and `subject`. `contactStatus=trashed` finds the mirrors a deleted contact froze. Paginated: pass `continueCursor` back as `cursor` until `isDone`. A source no snapshot ever named answers 404 `CONVERSATION_SOURCE_NOT_FOUND`, one only other service users own 403 `INTEGRATION_NOT_OWNED`.'
+      responses:
+        '200':
+          description: The mirrors, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                x-tale-pagination: keyset
+                required:
+                - conversations
+                - isDone
+                - continueCursor
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConversationMirror'
+                  isDone:
+                    type: boolean
+                  continueCursor:
+                    type: string
+                    description: Pass back as `cursor` for the next page; empty when `isDone`
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '304':
+          description: Not Modified — `If-None-Match` named the current `ETag`, so the body is not sent
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: The contact `externalContactId` names does not exist (`CONTACT_NOT_FOUND`), no snapshot ever named the source (`CONVERSATION_SOURCE_NOT_FOUND`), or the delivery or attachment is absent (`DELIVERY_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries:
+    get:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: source
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_-]{0,59}$
+        description: The source whose queue to read
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - queued
+          - leased
+          - failed
+          - delivered
+        description: One state to narrow the queue to
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: The previous page’s `continueCursor`, unchanged — opaque; omit for the first page. A value this list did not answer is refused with 400 `INVALID_CURSOR` rather than read as the first page
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+        description: Page size, 1..200 (default 50; out-of-range numbers are clamped, a value that is not a number answers 400 `INVALID_LIMIT`)
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: listConversationDeliveries
+      summary: Peek at the delivery queue
+      description: 'The queue of a source this key user mirrored, as it stands — no lease taken, nothing changed: every native reply queued for the source with its `status` (`queued` — the undo window, a backoff, a lapsed lease; `leased` while a claim’s lease runs; `failed` once dead-lettered; `delivered` once acknowledged), its attempt count and stamps, and never the claim token or the body — those only a claim earns. Oldest-due first (`retryAt`, then `messageId`), the order a claim drains it in; `status` narrows to one state. Paginated: pass `continueCursor` back as `cursor` until `isDone`. A source no snapshot ever named answers 404 `CONVERSATION_SOURCE_NOT_FOUND`, one only other service users own 403 `INTEGRATION_NOT_OWNED`.'
+      responses:
+        '200':
+          description: The queue, oldest-due first
+          content:
+            application/json:
+              schema:
+                type: object
+                x-tale-pagination: keyset
+                required:
+                - deliveries
+                - isDone
+                - continueCursor
+                properties:
+                  deliveries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConversationDelivery'
+                  isDone:
+                    type: boolean
+                  continueCursor:
+                    type: string
+                    description: Pass back as `cursor` for the next page; empty when `isDone`
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '304':
+          description: Not Modified — `If-None-Match` named the current `ETag`, so the body is not sent
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: The contact `externalContactId` names does not exist (`CONTACT_NOT_FOUND`), no snapshot ever named the source (`CONVERSATION_SOURCE_NOT_FOUND`), or the delivery or attachment is absent (`DELIVERY_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries/{id}/retry:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The native message ID the delivery carries
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: retryConversationDelivery
+      summary: Re-drive a dead-lettered delivery
+      description: 'Puts a delivery that dead-lettered — a permanent refusal, or ten transient failure reports — back in the queue, claimable at once with its attempt count reset: the same audited action as the Inbox’s Retry. No body. A delivery this key user does not own under the id is absent (404 `DELIVERY_NOT_FOUND`); one that is not dead-lettered — still queued or leased, already delivered — or whose conversation the source tore down or closed answers 409 `DELIVERY_RETRY_UNAVAILABLE`.'
+      responses:
+        '200':
+          description: Re-queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                properties:
+                  ok:
+                    type: boolean
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: No delivery owned by this user (`DELIVERY_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: Not dead-lettered, or its conversation is gone (`DELIVERY_RETRY_UNAVAILABLE`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries/claim:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: claimConversationDeliveries
+      summary: Poll queued native Inbox replies
+      description: 'Claims up to 100 due replies for a source owned by this API key user — a source no snapshot ever named answers 404 `CONVERSATION_SOURCE_NOT_FOUND`, one only other service users own 403 `INTEGRATION_NOT_OWNED`, so a mistyped source never polls a healthy-looking empty queue. Claim closes undo and grants a five-minute visibility lease. Unacknowledged deliveries become eligible again after their lease/backoff, in `retryAt`, `availableAt`, `messageId` order — the stamps `GET /api/v1/conversations/deliveries` shows without claiming. Each item says where it stands: `attempts` (failure reports so far), `leaseExpiresAt` (when this claim’s lease ends), `lastErrorCode` (the last failure’s code, `null` before one) and `firstClaimedAt`. Use stable messageId as the destination idempotency key and claimToken when reporting a failure. JSON is limited to 64 KiB.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - source
+              additionalProperties: false
+              properties:
+                source:
+                  type: string
+                  pattern: ^[a-z][a-z0-9_-]{0,59}$
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 100
+      responses:
+        '200':
+          description: Pending deliveries
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 'The complete set under `deliveries` — never paginated: no `isDone`, no cursor to follow'
+                x-tale-pagination: none
+                required:
+                - deliveries
+                properties:
+                  deliveries:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - messageId
+                      - claimToken
+                      - conversationId
+                      - externalId
+                      - actorUserId
+                      - actorEmail
+                      - body
+                      - availableAt
+                      - attempts
+                      - leaseExpiresAt
+                      - lastErrorCode
+                      - firstClaimedAt
+                      - attachments
+                      properties:
+                        messageId:
+                          type: string
+                        claimToken:
+                          type: string
+                          format: uuid
+                        conversationId:
+                          type: string
+                        externalId:
+                          type: string
+                        actorUserId:
+                          type: string
+                        actorEmail:
+                          type: string
+                        body:
+                          type: string
+                        availableAt:
+                          type: integer
+                          minimum: 0
+                          description: Epoch milliseconds
+                        attempts:
+                          type: integer
+                          description: Failure reports so far — the tenth transient one dead-letters the delivery
+                        leaseExpiresAt:
+                          type: integer
+                          minimum: 0
+                          description: When this claim’s visibility lease ends and the delivery becomes claimable again
+                        lastErrorCode:
+                          type:
+                          - string
+                          - 'null'
+                          description: The code of the last failure report; `null` before one
+                        firstClaimedAt:
+                          type: integer
+                          minimum: 0
+                          description: The first claim of this delivery — this one, unless it is a redelivery
+                        attachments:
+                          type: array
+                          items:
+                            type: object
+                            required:
+                            - storageId
+                            - filename
+                            - contentType
+                            - size
+                            properties:
+                              storageId:
+                                type: string
+                                description: Opaque — persist and echo it unchanged; its shape is not part of the contract
+                              filename:
+                                type: string
+                              contentType:
+                                type: string
+                              size:
+                                type: integer
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: The contact `externalContactId` names does not exist (`CONTACT_NOT_FOUND`), no snapshot ever named the source (`CONVERSATION_SOURCE_NOT_FOUND`), or the delivery or attachment is absent (`DELIVERY_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds 64 KiB — this operation’s own cap, below the door’s 1 MiB default (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries/{id}/fail:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The claimed native message ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: failConversationDelivery
+      summary: Report a refused or interrupted delivery
+      description: 'Idempotent for the claimToken; stale claims cannot fail a new attempt or an acknowledged reply. A permanent refusal, or ten transient failure reports, dead-letters the delivery: it leaves the claim queue, shows `failed` in `GET /api/v1/conversations/deliveries`, exposes native Inbox Retry/Discard, and `POST /api/v1/conversations/deliveries/{id}/retry` re-drives it. Transient failures retry after 1, 2, 4 minutes up to one hour. Only static error codes are accepted. JSON is limited to 64 KiB.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimToken:
+                  type: string
+                  format: uuid
+                  pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+                code:
+                  type: string
+                  enum:
+                  - platform_unauthorized
+                  - platform_forbidden
+                  - platform_not_found
+                  - platform_invalid_state
+                  - platform_validation_failed
+                  - platform_payload_too_large
+                  - platform_unavailable
+                  - tale_unavailable
+                  - network_error
+                  - contract_drift
+                permanent:
+                  type: boolean
+              required:
+              - claimToken
+              - code
+              - permanent
+              additionalProperties: false
+      responses:
+        '200':
+          description: Failure recorded or already superseded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                properties:
+                  ok:
+                    type: boolean
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: No delivery owned by this user (`DELIVERY_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds 64 KiB — this operation’s own cap, below the door’s 1 MiB default (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries/{id}/ack:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The claimed native message ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: acknowledgeConversationDelivery
+      summary: Acknowledge a reply after its destination commits
+      description: The receiptId is the destination message ID and sourceVersion is its committed source revision, reused unchanged on retries. Links that receipt to the existing native message and marks it delivered. A snapshot older than sourceVersion cannot delete the reply. Repeating the same receipt and version succeeds; changing either returns 409. JSON is limited to 64 KiB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - receiptId
+              - sourceVersion
+              additionalProperties: false
+              properties:
+                receiptId:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                sourceVersion:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+      responses:
+        '200':
+          description: Delivery acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                properties:
+                  ok:
+                    type: boolean
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: No claimed delivery owned by this user (`DELIVERY_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds 64 KiB — this operation’s own cap, below the door’s 1 MiB default (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/deliveries/{id}/attachments/{index}:
+    get:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Claimed native message ID
+      - name: index
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 9
+        description: Zero-based attachment position in the claimed delivery, 0..9. A segment that is not a whole number in that range names no attachment and answers 404 `ATTACHMENT_NOT_FOUND`, never 400
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: downloadConversationDeliveryAttachment
+      description: The bytes of one attachment of a delivery this key user claimed, at its position in the delivery’s attachment list; the stored content type rides with them and the response is private and uncacheable.
+      summary: Download a claimed reply attachment
+      responses:
+        '200':
+          description: 'Private attachment bytes, Cache-Control: private, no-store'
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: No claimed delivery this user owns under the id (`DELIVERY_NOT_FOUND`), or no attachment at that position (`ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/conversations/uploads:
+    post:
+      tags:
+      - Conversations
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      operationId: uploadConversationSourceAttachment
+      summary: Stage attachment bytes for a source snapshot
+      description: 'Uploads at most 30 MiB to this organization and records an upload intent owned by this key user. Bind the storageId, actual size and filename in a snapshot within two hours. Previously receipted refs can be reused on later source revisions. There is no delete: a staged upload that is never bound is reclaimed lazily — after the two-hour window plus a 24-hour grace, on the next upload into the organization — while a bound ref lives and dies with its message. An empty body answers 400 `FILE_SIZE_INVALID` — there is nothing to stage — and one over the cap 413 `BODY_TOO_LARGE`.'
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Staged attachment
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - storageId
+                properties:
+                  storageId:
+                    type: string
+                    description: Opaque — persist and echo it unchanged; its shape is not part of the contract
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: A read-only role (`ROLE_FORBIDDEN`), an integration another service user owns (`INTEGRATION_NOT_OWNED`), an attachment that is not this integration’s upload (`ATTACHMENT_NOT_OWNED`), or an unverified author (`AUTHOR_UNVERIFIED`); or `X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: The contact `externalContactId` names does not exist (`CONTACT_NOT_FOUND`), no snapshot ever named the source (`CONVERSATION_SOURCE_NOT_FOUND`), or the delivery or attachment is absent (`DELIVERY_NOT_FOUND`, `ATTACHMENT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`, `CONVERSATION_CONTACT_TRASHED` (the linked contact is in the trash — restore it or send a `deleted` teardown), `CONTACT_AMBIGUOUS`, `DELIVERY_UNACKNOWLEDGED`, `DELIVERY_RECEIPT_CONFLICT`, `DELIVERY_RETRY_UNAVAILABLE`, `CONVERSATION_CLOSED` (the source tore the mirror down — a content snapshot onto it, or an Inbox reply to it)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds 30 MiB — this operation’s own cap, above the door’s 1 MiB default, the staging cap the description names (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+components:
+  schemas:
+    ConversationDelivery:
+      type: object
+      description: One native Inbox reply in a source’s delivery queue, as the listing shows it — never the claim token or the body
+      required:
+      - messageId
+      - conversationId
+      - externalId
+      - status
+      - attempts
+      - availableAt
+      - retryAt
+      - claimedAt
+      - failedAt
+      - lastErrorCode
+      - acknowledgedAt
+      - receiptId
+      additionalProperties: false
+      properties:
+        messageId:
+          type: string
+        conversationId:
+          type: string
+        externalId:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - leased
+          - failed
+          - delivered
+          description: '`queued` — waiting (the undo window, a backoff, a lapsed lease); `leased` — a claim’s five-minute lease runs; `failed` — dead-lettered, awaiting a retry or a discard; `delivered` — acknowledged'
+        attempts:
+          type: integer
+          description: Failure reports so far
+        availableAt:
+          type: integer
+          minimum: 0
+          description: When the undo window closed and the reply became claimable
+        retryAt:
+          type: integer
+          minimum: 0
+          description: 'When it next becomes claimable: the lease end while leased, the backoff end after a transient failure, in the past (or 0) when due now'
+        claimedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: The first claim; `null` until one
+        failedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: When it dead-lettered; `null` otherwise
+        lastErrorCode:
+          type:
+          - string
+          - 'null'
+          description: The code of the last failure report
+        acknowledgedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds
+        receiptId:
+          type:
+          - string
+          - 'null'
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+          description: What went wrong
+        code:
+          type: string
+          enum:
+          - ACTOR_AMBIGUOUS
+          - ACTOR_DISABLED
+          - ACTOR_FORBIDDEN
+          - ACTOR_NOT_FOUND
+          - ACTOR_REBOUND
+          - ACTOR_UNVERIFIED
+          - API_KEY_SCOPE_FORBIDDEN
+          - ATTACHMENT_NOT_FOUND
+          - ATTACHMENT_NOT_OWNED
+          - ATTACHMENT_NOT_STAGED
+          - ATTACHMENT_SIZE_MISMATCH
+          - AUTHOR_UNVERIFIED
+          - AUTOMATION_DELIVERY_SCOPE_MISMATCH
+          - AUTOMATION_HAS_ACTIVE_RUNS
+          - AUTOMATION_INPUT_INVALID
+          - AUTOMATION_NOT_DEPLOYED
+          - AUTOMATION_NOT_FOUND
+          - AUTOMATION_NOT_INSTALLED
+          - AUTOMATION_PROJECT_FORBIDDEN
+          - AUTOMATION_PROJECT_SCOPE_REQUIRED
+          - AUTOMATION_TRIGGER_INVALID
+          - AUTOMATION_VERSION_NOT_DEPLOYED
+          - AUTOMATION_VERSION_UNKNOWN
+          - BLOB_NOT_FOUND
+          - BODY_CHUNK_MALFORMED
+          - BODY_LENGTH_MISMATCH
+          - BODY_TOO_LARGE
+          - BROWSER_SESSION_NOT_FOUND
+          - BUDGET_EXCEEDED
+          - CHAT_MODEL_AMBIGUOUS
+          - CHAT_MODEL_NOT_ON_PROVIDER
+          - CHAT_MODEL_UNKNOWN
+          - CHAT_PROVIDER_UNKNOWN
+          - CHAT_THREAD_ARCHIVED
+          - CHAT_THREAD_NOT_DIRECT
+          - CHAT_TURN_IN_PROGRESS
+          - CHAT_TURN_NOT_RUNNING
+          - CONTACT_AMBIGUOUS
+          - CONTACT_DUPLICATE_EMAIL
+          - CONTACT_DUPLICATE_EXTERNAL_ID
+          - CONTACT_IDENTITY_REQUIRED
+          - CONTACT_NOT_FOUND
+          - CONTACT_STALE
+          - CONVERSATION_CLOSED
+          - CONVERSATION_CONTACT_CONFLICT
+          - CONVERSATION_CONTACT_TRASHED
+          - CONVERSATION_NOT_FOUND
+          - CONVERSATION_SNAPSHOT_CONFLICT
+          - CONVERSATION_SOURCE_NOT_FOUND
+          - DATABASE_UNAVAILABLE
+          - DELIVERY_NOT_FOUND
+          - DELIVERY_RECEIPT_CONFLICT
+          - DELIVERY_RETRY_UNAVAILABLE
+          - DELIVERY_UNACKNOWLEDGED
+          - DOCUMENT_HAS_KNOWLEDGE_ENTRY
+          - DOCUMENT_NOT_FOUND
+          - DOCUMENT_RECORD_FROZEN
+          - DOCUMENT_RECORD_PROTECTED
+          - DOCUMENT_RECORD_REPLACEMENT_REQUIRED
+          - DOCUMENT_STALE
+          - DUPLICATE_PRODUCT_EXTERNAL_ID
+          - DUPLICATE_PRODUCT_NAME
+          - EMBEDDING_CREDENTIAL_REJECTED
+          - EMBEDDING_CREDIT_EXHAUSTED
+          - EMBEDDING_NOT_CONFIGURED
+          - EMBEDDING_UPSTREAM_ERROR
+          - EMPTY_ANSWER
+          - FILE_NOT_FOUND
+          - FILE_SIZE_INVALID
+          - FILE_TOO_LARGE
+          - FOLDER_DEPTH_EXCEEDED
+          - FOLDER_NAME_INVALID
+          - FOLDER_NAME_TAKEN
+          - FOLDER_NOT_ACCESSIBLE
+          - FOLDER_NOT_FOUND
+          - FORBIDDEN_DEPLOYMENT_EDITOR
+          - FORBIDDEN_INSTANCE_ADMIN
+          - HTTP_ERROR
+          - HUMAN_ASK_EXPIRED
+          - HUMAN_ASK_NOT_FOUND
+          - HUMAN_ASK_NOT_PENDING
+          - IDEMPOTENCY_KEY_REUSED
+          - INTEGRATION_NOT_OWNED
+          - INTERNAL_ERROR
+          - INVALID_BODY
+          - INVALID_CURSOR
+          - INVALID_HEADER
+          - INVALID_LIMIT
+          - INVALID_QUERY
+          - INVALID_SESSION
+          - INVALID_SKILL
+          - INVALID_SKILL_SLUG
+          - INVALID_URL
+          - KNOWLEDGE_ENTRY_DUPLICATE
+          - KNOWLEDGE_ENTRY_FORBIDDEN
+          - KNOWLEDGE_ENTRY_NOT_FOUND
+          - KNOWLEDGE_ENTRY_STORE_TIMEOUT
+          - KNOWLEDGE_ENTRY_SUPERSEDED
+          - LEGAL_HOLD_ACTIVE
+          - MENTION_DIRECTORY_UNAVAILABLE
+          - MESSAGE_NOT_FOUND
+          - METHOD_NOT_ALLOWED
+          - MODEL_API_CONCURRENCY_EXCEEDED
+          - MODEL_API_DISABLED
+          - MODEL_API_FORBIDDEN
+          - MODEL_API_GUARDRAIL_BLOCKED
+          - MODEL_API_GUARDRAIL_UNAVAILABLE
+          - MODEL_API_GUARDRAIL_UNSUPPORTED
+          - MODEL_API_MODEL_FORBIDDEN
+          - MODEL_API_MODEL_UNKNOWN
+          - MODEL_API_TEXT_TOO_LARGE
+          - MODEL_API_TOOLS_UNSUPPORTED
+          - MODEL_API_UNAVAILABLE
+          - MODEL_API_UPSTREAM_ERROR
+          - MODEL_API_VENDOR_TOOL_UNSUPPORTED
+          - MODEL_API_VISION_UNSUPPORTED
+          - NOT_FOUND
+          - OBJECT_STORE_UNAVAILABLE
+          - OBJECT_STORE_UNCONFIGURED
+          - ORG_FORBIDDEN
+          - ORG_SLUG_INVALID
+          - ORG_SLUG_REQUIRED
+          - ORIGIN_FORBIDDEN
+          - PRECONDITION_FAILED
+          - PRODUCT_NOT_FOUND
+          - PRODUCT_STALE
+          - PROJECT_AGENT_CONNECTOR_UNKNOWN
+          - PROJECT_AGENT_HARNESS_INVALID
+          - PROJECT_AGENT_LIMIT
+          - PROJECT_AGENT_MANAGED
+          - PROJECT_AGENT_MODEL_INVALID
+          - PROJECT_AGENT_NAME_TAKEN
+          - PROJECT_AGENT_NOT_FOUND
+          - PROJECT_AGENT_PROVIDER_UNKNOWN
+          - PROJECT_AGENT_SECRETS_FORBIDDEN
+          - PROJECT_AGENT_SECRET_UNKNOWN
+          - PROJECT_AGENT_SKILL_UNKNOWN
+          - PROJECT_AGENT_STALE
+          - PROJECT_AGENT_TOOL_UNKNOWN
+          - PROJECT_ARCHIVED
+          - PROJECT_DUPLICATE_EXTERNAL_ID
+          - PROJECT_FORBIDDEN
+          - PROJECT_HAS_BOUND_AUTOMATIONS
+          - PROJECT_HAS_PROTECTED_RECORDS
+          - PROJECT_KEY_INVALID
+          - PROJECT_KEY_TAKEN
+          - PROJECT_LEGAL_HOLD
+          - PROJECT_NOT_FOUND
+          - PROJECT_SHARING_INVALID
+          - PURGE_INCOMPLETE
+          - RATE_LIMITED
+          - RBAC_FORBIDDEN
+          - REQUEST_TIMEOUT
+          - REVIEW_COMPETENCE_REQUIRED
+          - REVIEW_INDEPENDENT_REVIEWER_REQUIRED
+          - ROLE_FORBIDDEN
+          - RUN_ACTIVE
+          - RUN_NOT_FOUND
+          - RUN_QUARANTINED
+          - RUN_QUARANTINE_CHANGED
+          - SETUP_FOLDER_MISSING
+          - SKILL_EXISTS
+          - SKILL_FILE_NOT_FOUND
+          - SKILL_FORBIDDEN
+          - SKILL_MALFORMED
+          - SKILL_NOT_FOUND
+          - SKILL_PUBLISH_FORBIDDEN
+          - SKILL_STALE
+          - SKILL_TEAM_UNKNOWN
+          - STANDARD_AGENT_OFF
+          - STANDARD_AGENT_UNAVAILABLE
+          - TASK_AGENT_REVIEW_REQUIRED
+          - TASK_ARCHIVED
+          - TASK_AUTOMATION_DISABLED
+          - TASK_AUTOMATION_UNAVAILABLE
+          - TASK_EXTERNAL_REF_INVALID
+          - TASK_EXTERNAL_STATUS_STALE
+          - TASK_HAS_LIVE_RUN
+          - TASK_HAS_OPEN_SUBTASKS
+          - TASK_LABEL_UNKNOWN
+          - TASK_NOT_FOUND
+          - TASK_NOT_IN_REVIEW
+          - TASK_REVIEW_POLICY_UNAVAILABLE
+          - TASK_STATUS_CONFLICT
+          - TEAM_ACCESS_DENIED
+          - TEAM_INHERITED_FROM_FOLDER
+          - TEAM_NOT_IN_ORG
+          - THREAD_NOT_FOUND
+          - UNAUTHORIZED
+          - UNSUPPORTED_FILE_TYPE
+          - UPLOAD_FILE_MISMATCH
+          - UPLOAD_INTENT_INVALID
+          - UPLOAD_POLICY_REJECTED
+          - UPSTREAM_UNAVAILABLE
+          - URI_TOO_LONG
+          - WEBSITE_DOMAIN_IMMUTABLE
+          - WEBSITE_DOMAIN_INVALID
+          - WEBSITE_DOMAIN_NOT_CRAWLABLE
+          - WEBSITE_DUPLICATE_DOMAIN
+          - WEBSITE_INVALID_LIST_URL
+          - WEBSITE_NOT_FOUND
+          description: 'A stable refusal code — every refusal the door itself makes carries one, and so does every domain refusal it lets through. The set is additive: a new code is a minor change, so treat a value you do not know as a generic refusal of the status you got.'
+        requestId:
+          type: string
+          description: The response’s `X-Request-Id`, repeated on a 429, on a 500, on a body-size 413 and on a URL-size 414 so a caller can quote it
+        data:
+          type: object
+          properties:
+            retryAfterMs:
+              type: number
+              description: Wait in milliseconds for RATE_LIMITED
+            providers:
+              type: array
+              items:
+                type: string
+              description: For CHAT_MODEL_AMBIGUOUS, the provider slugs that serve the model — name one as `providerSlug`
+            lastMessageId:
+              type: string
+              description: 'For CHAT_TURN_NOT_RUNNING, the newest assistant message on the thread (once it has one) — the idle poll’s own disambiguation: equal to the `messageId` a 202 named means that turn already settled'
+            lastStatus:
+              type: string
+              enum:
+              - pending
+              - complete
+              - failed
+              - cancelled
+              description: For CHAT_TURN_NOT_RUNNING, how `lastMessageId` settled (present with it)
+            organizations:
+              type: array
+              description: For ORG_SLUG_REQUIRED, ORG_SLUG_INVALID and ORG_FORBIDDEN, the organizations the key holder belongs to (a disabled membership is left out; the list is empty when none remains) — send one of the slugs as `X-Organization-Slug`
+              items:
+                type: object
+                required:
+                - slug
+                - name
+                properties:
+                  slug:
+                    type: string
+                  name:
+                    type: string
+            issues:
+              type: array
+              description: For INVALID_BODY and INVALID_QUERY, every problem the schema found in the body or the query string; for INVALID_LIMIT and INVALID_CURSOR, the one parameter refused (`limit`, `cursor`); for AUTOMATION_INPUT_INVALID, every problem the automation’s inputs schema found in the run input (at most 20 either way), each naming the field and the reason; `error` repeats the first one
+              items:
+                type: object
+                required:
+                - path
+                - message
+                properties:
+                  path:
+                    type: string
+                    description: The field, dotted for nesting (`address.city`, `contacts.2.email`); empty for a problem with the body as a whole
+                  message:
+                    type: string
+            scope:
+              type: string
+              enum:
+              - user
+              - team
+              - project
+              - org
+              - apiKey
+              description: 'For BUDGET_EXCEEDED, whose cap is reached: the key holder’s own (`user`), one of their teams’ (`team`), that of the project the work belongs to (`project`), the organization’s (`org`) or this API key’s (`apiKey`)'
+            period:
+              type: string
+              enum:
+              - daily
+              - weekly
+              - monthly
+              description: For BUDGET_EXCEEDED, what the cap counts over — a calendar day, ISO week or calendar month in UTC
+            limitCode:
+              type: string
+              enum:
+              - TOKEN_LIMIT
+              - COST_LIMIT
+              - REQUEST_LIMIT
+              description: 'For BUDGET_EXCEEDED, which cap is reached: tokens, cost in cents, or requests'
+            used:
+              type: number
+              description: For BUDGET_EXCEEDED, the usage the cap measured this period, in its unit (tokens, cents or requests)
+            limit:
+              type: number
+              description: For BUDGET_EXCEEDED, the cap, in the same unit
+            resetsAt:
+              type: number
+              description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
+    ConversationMirror:
+      type: object
+      required:
+      - conversationId
+      - externalId
+      - externalContactId
+      - contactId
+      - contactStatus
+      - version
+      - sourceDeleted
+      - status
+      - subject
+      - createdAt
+      properties:
+        conversationId:
+          type: string
+        externalId:
+          type: string
+          description: The source conversation’s own id
+        externalContactId:
+          type: string
+          description: The bound contact’s current external id
+        contactId:
+          type:
+          - string
+          - 'null'
+          description: The bound contact row — `GET /api/v1/contacts/{id}` takes it; null when none is linked
+        contactStatus:
+          type: string
+          enum:
+          - active
+          - trashed
+          - missing
+          description: '`trashed`: the contact was deleted and the mirror takes no more content until it is restored'
+        version:
+          type: integer
+          description: The stored source revision; -1 before the first snapshot applied
+        sourceDeleted:
+          type: boolean
+          description: The source tore the mirror down with a `deleted` snapshot
+        status:
+          type: string
+          description: The Inbox conversation’s status
+        subject:
+          type:
+          - string
+          - 'null'
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+  headers:
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
+x-refined-from:
+- tale-dev-openapi-original.json
+- tale-dev-openapi.yml

@@ -1,0 +1,14 @@
+name: Tale Platform API rate limits
+generated: '2026-10-09'
+method: searched
+source: https://docs.tale.dev/develop/rate-limits
+exhaustion_status: 429
+headers: [Retry-After]
+limits:
+- {name: General /api/v1 traffic, limit_text: 120/minute, max: 120, window: minute, burst: 200, scope: Key holder, note: including MCP and the model endpoints}
+- {name: Run starts, model-message sends and task starts, limit_text: 20/minute, max: 20, window: minute, burst: 40, scope: Key holder}
+- {name: Project upload handoff and file binding, limit_text: 240/minute, max: 240, window: minute, burst: 300, scope: Key holder}
+- {name: Failed API-key authentication, limit_text: 20/minute, max: 20, window: minute, burst: 40, scope: Source IP}
+- {name: Webhook deliveries before token validation, limit_text: 120/minute, max: 120, window: minute, burst: 240, scope: Sender address}
+- {name: Deliveries to a verified webhook trigger, limit_text: 20/minute, max: 20, window: minute, burst: 40, scope: Trigger}
+limit_count: 6

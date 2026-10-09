@@ -1,0 +1,121 @@
+generated: '2026-10-09'
+method: derived
+generator: derive-problem-types.py
+source:
+- openapi/tale-dev-openapi.yml
+format: custom
+envelope:
+  media_type: application/json
+  schema: Error
+coverage:
+  operations: 143
+  statuses_declared: 14
+problems:
+- status: 400
+  title: Bad Request
+  description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL
+    or an unpaired surrogate, a whole number b'
+  operations: 142
+  media_types:
+  - application/json
+  schema: Error
+- status: 401
+  title: Unauthorized
+  description: Missing or invalid API key (`UNAUTHORIZED`)
+  operations: 141
+  media_types:
+  - application/json
+  schema: Error
+- status: 403
+  title: Forbidden
+  description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with
+    the slugs the key holder may send under `d'
+  operations: 143
+  media_types:
+  - application/json
+  schema: Error
+- status: 404
+  title: Not Found
+  description: '`X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may
+    send under `data.organizations`)'
+  operations: 143
+  media_types:
+  - application/json
+  schema: Error
+- status: 405
+  title: Method Not Allowed
+  description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+  operations: 141
+  media_types:
+  - application/json
+  schema: Error
+- status: 409
+  title: Conflict
+  description: 'Conflicting identity, revision, or receipt: `CONVERSATION_SNAPSHOT_CONFLICT`, `CONVERSATION_CONTACT_CONFLICT`,
+    `CONVERSATION_CONTACT_TRASHED'
+  operations: 57
+  media_types:
+  - application/json
+  schema: Error
+- status: 412
+  title: Precondition Failed
+  description: The `If-Match` tag does not strongly match the document’s current representation (`PRECONDITION_FAILED`,
+    `data.etag` naming the current tag)
+  operations: 3
+  media_types:
+  - application/json
+  schema: Error
+- status: 413
+  title: Content Too Large
+  description: The body exceeds this operation’s byte cap — 1 MiB unless the description says otherwise (`BODY_TOO_LARGE`);
+    the envelope carries a `request
+  operations: 57
+  media_types:
+  - application/json
+  schema: Error
+- status: 416
+  title: Range Not Satisfiable
+  description: 'The range starts at or past the end of the file: an empty body (`Content-Length: 0`), no envelope,
+    `Content-Range: bytes */<size>` naming th'
+  operations: 2
+  media_types: []
+  schema: null
+- status: 422
+  title: Unprocessable Content
+  description: The bundle already stored under the slug cannot be read — a planted symlink, a file over the 4 MiB
+    staging cap, a `SKILL.md` that does not p
+  operations: 2
+  media_types:
+  - application/json
+  schema: Error
+- status: 429
+  title: Too Many Requests
+  description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole
+    seconds and `data.retryAfterMs` in millisec'
+  operations: 143
+  media_types:
+  - application/json
+  schema: Error
+- status: 500
+  title: Internal Server Error
+  description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+  operations: 141
+  media_types:
+  - application/json
+  schema: Error
+- status: 502
+  title: Bad Gateway
+  description: The model gateway could not be reached, the vendor failed, or its stream broke off before the answer
+    was complete (`MODEL_API_UPSTREAM_ERROR
+  operations: 2
+  media_types:
+  - application/json
+  schema: OpenAiError
+- status: 503
+  title: Service Unavailable
+  description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After`
+    names the wait in whole seconds — retry w'
+  operations: 143
+  media_types:
+  - application/json
+  schema: Error

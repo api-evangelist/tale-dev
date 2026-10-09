@@ -1,0 +1,176 @@
+# Tale documentation
+
+> Use Tale, the open-source workspace for teams and AI agents: coordinate project tasks, configure agents, review their work, and manage your deployment.
+
+Every page below is also published in German and French: put `/de` or `/fr` after the host, as in https://docs.tale.dev/de/cloud/billing.md. The path stays the same in every language — never translate it.
+
+Open only the addresses this index lists; a guessed address may not exist.
+
+## Cloud
+
+- [Plans, invoices, and usage](https://docs.tale.dev/cloud/billing.md): Understand your Cloud service charges, model usage, and the controls available in Tale.
+- [Understand Cloud data residency](https://docs.tale.dev/cloud/data-residency.md): Separate storage location from provider and connector data flows before choosing a Cloud deployment.
+- [Tale Cloud](https://docs.tale.dev/cloud.md): Use a managed Tale instance and understand the service responsibilities.
+- [Plan a move to self-hosted Tale](https://docs.tale.dev/cloud/migrate-to-self-hosted.md): Prepare an assisted Cloud migration, validate the destination, and agree on a recovery plan.
+- [Get started on Tale Cloud](https://docs.tale.dev/cloud/onboarding.md): Get your instance address, sign in, and prepare a working workspace for the team.
+- [Security and compliance](https://docs.tale.dev/cloud/trust-and-compliance.md): Find certification information, understand responsibilities, and collect evidence for a security review.
+
+## Develop
+
+- [Edit configuration with a coding agent](https://docs.tale.dev/develop/ai-assisted-development.md): Give a coding agent the right project context, distinguish templates from active configuration, and review changes before deployment.
+- [API reference](https://docs.tale.dev/develop/api-reference.md): Call the REST API, choose the organization and project, read paginated results, and handle asynchronous work and errors.
+- [Contributor Compose files](https://docs.tale.dev/develop/compose-files.md): Choose a source-development workflow and understand how the repository’s Compose overlays fit together.
+- [Connectors](https://docs.tale.dev/develop/connectors.md): How a connector is declared, what one of its actions promises a caller, and where your own code goes when no connector fits.
+- [Build and maintain Tale images](https://docs.tale.dev/develop/contributing-docker.md): Choose the correct Dockerfile, build a local image, verify its behavior and publish a reviewed image set to your registry.
+- [Run Tale from source](https://docs.tale.dev/develop/contributor-setup.md): Prepare a local contributor environment, start the backend and app, and verify your change.
+- [MCP endpoint](https://docs.tale.dev/develop/mcp-endpoint.md): Connect an MCP client, discover Tale tools, develop automations, and handle access checks and execution results.
+- [Build with Tale](https://docs.tale.dev/develop/overview.md): Connect another system to Tale, automate a workflow, or contribute to the application source.
+- [Handle rate limits](https://docs.tale.dev/develop/rate-limits.md): Plan REST, MCP and webhook traffic, interpret Retry-After and retry accepted work without duplicating it.
+- [Check instance availability](https://docs.tale.dev/develop/status-page.md): Read the public status page, monitor its JSON response and distinguish an outage from a failed operation.
+- [Use Tale from your editor or a script](https://docs.tale.dev/develop/use-tale-from-your-editor.md): Call your organization's models from opencode, Claude Code or the OpenAI and Anthropic SDKs, script the REST chat, or add Tale's MCP tools to your editor.
+- [WebDAV API](https://docs.tale.dev/develop/webdav-api.md): Connect a file client, verify uploads and downloads, and handle WebDAV permissions, locks, and protocol limits.
+- [Webhooks](https://docs.tale.dev/develop/webhooks.md): Inbound webhook triggers — POST to a token URL and a deployed automation runs. Token handling, rotation, idempotency, and the response codes.
+
+## Start here
+
+- [Set up a workspace for your team](https://docs.tale.dev/get-started/admins.md): Connect a model provider, add members, and verify the workspace with the access your team will use.
+- [Make your first API request](https://docs.tale.dev/get-started/developers.md): Create a key, identify your organization and find the models your integration can call.
+- [Create and test a project agent](https://docs.tale.dev/get-started/editors.md): Give a project agent a focused job, start it on a task, and review the result.
+- [Use Tale with your team](https://docs.tale.dev/get-started/members.md): Find your conversations, choose where to put information, and work in a project.
+- [Send your first message](https://docs.tale.dev/get-started/quickstart.md): Sign in to Tale, start a chat, choose a model, and check the response.
+
+## Platform
+
+- [Govern project agents](https://docs.tale.dev/platform/admin/agents.md): Review who can change agents, which resources they can use and how secret grants affect their runs.
+- [API keys](https://docs.tale.dev/platform/admin/api-keys.md): Create, verify, rotate, and revoke credentials for software that calls Tale.
+- [Branding](https://docs.tale.dev/platform/admin/branding.md): Change the organization logo, tab icons, and accent color, and understand when changes apply.
+- [What’s new](https://docs.tale.dev/platform/admin/changelog.md): Read platform release notes and find changes relevant to your team.
+- [Connector credentials](https://docs.tale.dev/platform/admin/connectors.md): Connect service accounts, choose defaults, and repair or replace their authorization.
+- [Enterprise SSO and provisioning](https://docs.tale.dev/platform/admin/enterprise-sso.md): Connect your identity provider, test sign-in, and manage member roles and teams with SSO, SCIM or a trusted proxy.
+- [Audit logs](https://docs.tale.dev/platform/admin/governance/audit-logs.md): Find recorded organization changes, inspect event details, export results, and check the audit chain.
+- [Competences](https://docs.tale.dev/platform/admin/governance/competences.md): Give a member one narrow right or a qualification without an Admin role, and revoke it when it is no longer needed.
+- [Models](https://docs.tale.dev/platform/admin/governance/content-models.md): Set default models, restrict access, choose separate models for images and audio transcription, and set up the standard agent for projects without agents.
+- [Data subject requests](https://docs.tale.dev/platform/admin/governance/data-subject-requests.md): File and review a person's erasure request, manage approvals and deadlines, and inspect the resulting receipt.
+- [Feedback analytics](https://docs.tale.dev/platform/admin/governance/feedback-analytics.md): Compare chat ratings and arena verdicts, read comments, and investigate changes in answer quality.
+- [Guardrails](https://docs.tale.dev/platform/admin/governance/guardrails.md): Configure chat content filters, personal-data protection, and moderation, then review detections and errors.
+- [Legal hold](https://docs.tale.dev/platform/admin/governance/legal-hold.md): Preserve a person's or organization's data, organize holds by matter, and review release requests.
+- [Operations metrics](https://docs.tale.dev/platform/admin/governance/operations-metrics.md): Check failed and blocked chat replies, agent turns in the sandbox, automation run outcomes, and project delivery under Settings > Metrics.
+- [Policies and limits](https://docs.tale.dev/platform/admin/governance/policies-and-limits.md): Set spending budgets, upload rules, retention periods, feature controls, a chat confidentiality notice, who may share skills with everyone, and inbound-conversation routing.
+- [Trash](https://docs.tale.dev/platform/admin/governance/trash.md): Find recoverable records, understand their status, and restore them before permanent deletion.
+- [Usage analytics](https://docs.tale.dev/platform/admin/governance/usage-analytics.md): Investigate token consumption, request volume, and recorded cost by model, assistant, and user.
+- [How usage is counted](https://docs.tale.dev/platform/admin/governance/usage-attribution.md): Who each chat reply, agent run, or voice request counts against, which limits apply, and where it appears in Usage analytics.
+- [Members and roles](https://docs.tale.dev/platform/admin/members-and-roles.md): Add people, choose their permissions, and manage account access.
+- [Admin](https://docs.tale.dev/platform/admin/overview.md): Set up access, AI services, security, and organization settings.
+- [AI providers](https://docs.tale.dev/platform/admin/providers.md): Connect provider credentials, make models available, and diagnose missing model choices.
+- [Run sandboxes on your own devices](https://docs.tale.dev/platform/admin/sandbox-devices.md): Connect a Linux or macOS machine with Docker so your organization's agent and automation sandboxes run on it.
+- [Manage sandbox capacity](https://docs.tale.dev/platform/admin/sandboxes.md): Adjust concurrent workload limits, interpret infrastructure measurements and investigate work waiting for a sandbox.
+- [Teams](https://docs.tale.dev/platform/admin/teams.md): Group people to decide who can see team documents, projects, and inbox queues.
+- [Two-factor authentication](https://docs.tale.dev/platform/admin/two-factor-authentication.md): Protect your account with an authenticator or passkey, keep recovery codes, and roll out an organization policy.
+- [Understand project agents](https://docs.tale.dev/platform/agents/concepts.md): Decide what an agent should own and how its runtime, model, instructions and equipment fit together.
+- [Choose an agent runtime](https://docs.tale.dev/platform/agents/harnesses.md): Match an agent runtime to its credentials, tools and sandbox behavior before assigning real work.
+- [Equip agents with skills](https://docs.tale.dev/platform/agents/skills.md): Choose reusable skill bundles for project agents and automation nodes, understand their access scope, and check how they run.
+- [Understand operation approvals](https://docs.tale.dev/platform/approvals/concepts.md): Learn why a connector write pauses, what approving or rejecting means, and where to review its outcome.
+- [Decide which actions need approval](https://docs.tale.dev/platform/approvals/configure.md): Understand the default approval rules, request a policy change, and distinguish operation approvals from other reviews.
+- [Respond to a waiting workflow](https://docs.tale.dev/platform/automations/approvals-in-workflows.md): Find a paused automation run, review a proposed write, or answer an agent’s question so the run can continue.
+- [Choose how to author an automation](https://docs.tale.dev/platform/automations/assistant.md): Use the visual editor for direct changes or connect an external assistant to Tale through MCP.
+- [Built-in automations](https://docs.tale.dev/platform/automations/builtin.md): Choose a shipped mail, GitHub or GlitchTip workflow, check its inputs and connections, and understand what it reads or writes before deployment.
+- [Create or import an automation](https://docs.tale.dev/platform/automations/catalog.md): Choose a starting point, import a validated package and prepare its skills, settings and deliverables before deployment.
+- [Automation concepts](https://docs.tale.dev/platform/automations/concepts.md): Understand workflow steps, saved versions, deployment, triggers, and the history of each run.
+- [The workflow editor](https://docs.tale.dev/platform/automations/editor.md): Inspect and edit nodes, supply test input, save a version, and deploy or roll back an automation.
+- [Read automation runs and recover from failures](https://docs.tale.dev/platform/automations/execution-logs.md): Trace a run from its status to the failing node, inspect recorded writes and decide whether to stop, fix or retry.
+- [Start automations automatically](https://docs.tale.dev/platform/automations/triggers.md): Configure schedules, webhooks and platform events, match their input shape and diagnose missed starts.
+- [Compare models in Arena](https://docs.tale.dev/platform/chat/arena-mode.md): Send one prompt to two models, assess both replies and choose how to continue the conversation.
+- [Ask about files and images](https://docs.tale.dev/platform/chat/attachments.md): Attach a document, image, or recording to a chat and understand when its contents are ready for the assistant.
+- [Ask questions in chat](https://docs.tale.dev/platform/chat/basics.md): Send a message, choose a model, check the answer’s sources, and keep a useful conversation.
+- [Chat](https://docs.tale.dev/platform/chat/overview.md): Ask a question, inspect the answer and its sources, and keep useful conversations within reach.
+- [Share a chat with your organization](https://docs.tale.dev/platform/chat/shared-threads.md): Create a read-only snapshot, choose when to include newer messages, and stop sharing later.
+- [Voice mode](https://docs.tale.dev/platform/chat/voice-mode.md): Dictate a message, check the transcript before sending, and listen to replies when voice output is available.
+- [Connect an external client with MCP](https://docs.tale.dev/platform/connectors/mcp-servers.md): Find Tale’s MCP endpoint and understand how external clients use it to work with Tale.
+- [Connect Tale to external services](https://docs.tale.dev/platform/connectors/overview.md): Choose a connector, connect the intended account and understand where its read and write actions can run.
+- [Open Tale documents through WebDAV](https://docs.tale.dev/platform/connectors/webdav.md): Generate a device password, connect a WebDAV client and verify file access without confusing project and organization storage.
+- [Developer](https://docs.tale.dev/platform/developer/overview.md): Build automations and connect Tale to your clients, scripts, and external services.
+- [Editor](https://docs.tale.dev/platform/editor/overview.md): Maintain shared knowledge and carry out the content work your team needs.
+- [Platform](https://docs.tale.dev/platform.md): Learn the product by the work you want to do, from a first chat to projects, automations, and administration.
+- [Add websites to knowledge](https://docs.tale.dev/platform/knowledge/crawling.md): Choose public pages to index, set a scan interval, and investigate missing or outdated content.
+- [Documents](https://docs.tale.dev/platform/knowledge/documents.md): Upload shared reference files, check whether they can be searched, and keep imports and approved revisions current.
+- [Knowledge entries](https://docs.tale.dev/platform/knowledge/knowledge-entries.md): Add a concise fact to shared knowledge, keep it current, and check the history when it changes.
+- [Knowledge](https://docs.tale.dev/platform/knowledge/overview.md): Choose where to store shared information, prepare it for search, and check the sources behind an answer.
+- [Choose documents or structured records](https://docs.tale.dev/platform/knowledge/structured-data.md): Decide where to keep policies, contact details, product data, and website content so Tale can find the right information.
+- [Install Tale as an app](https://docs.tale.dev/platform/member/install-as-app.md): Add Tale to your home screen or desktop, understand sign-in behavior and remove the installed app.
+- [Member](https://docs.tale.dev/platform/member/overview.md): Start with chat, shared knowledge, and the work your organization has made available to you.
+- [Manage your account and preferences](https://docs.tale.dev/platform/member/preferences.md): Update your name, secure your sign-in, choose a language, and understand the personal settings available in Tale.
+- [Choose an available model](https://docs.tale.dev/platform/models.md): Understand model selection, provider catalogs and the checks that explain a missing or refused model.
+- [Triage the project backlog](https://docs.tale.dev/platform/projects/backlog.md): Capture proposed work, decide what is ready, and move it into delivery without confusing assignment with execution.
+- [Project concepts](https://docs.tale.dev/platform/projects/concepts.md): Understand what a project shares, what stays personal, and when to move recurring work into one.
+- [Manage project files](https://docs.tale.dev/platform/projects/manage-files.md): Upload and organize reference files, check indexing, and understand the difference between deleting a file and moving it to Knowledge.
+- [Projects](https://docs.tale.dev/platform/projects/overview.md): Bring a team's reference material, conversations, and tasks together around a shared piece of work.
+- [Create and manage project agents](https://docs.tale.dev/platform/projects/project-agents.md): Configure a reusable worker, grant its equipment and start a task whose result you can review.
+- [Delegate a task to an agent](https://docs.tale.dev/platform/projects/task-automation.md): Start an agent on a project task, review its result, request changes, and recover or cancel a run.
+- [Manage tasks on a project board](https://docs.tale.dev/platform/projects/tasks.md): Create a task, name its owner, track progress, and review the result in one place.
+- [Skill library](https://docs.tale.dev/platform/workspace/skills.md): Create reusable instructions, import a skill bundle, and choose which teams and project agents can use it.
+
+## Self-hosted
+
+- [Set automation approval rules](https://docs.tale.dev/self-hosted/configuration/approvals.md): Configure which connector writes need human approval and verify how rules are resolved.
+- [Choose an authentication setup](https://docs.tale.dev/self-hosted/configuration/authentication.md): Configure local accounts, enterprise sign-in or a trusted authentication proxy for your deployment.
+- [Release client configurations](https://docs.tale.dev/self-hosted/configuration/config-releases.md): Build, verify and deploy a versioned automation pack from a client repository with the Tale CLI, then verify its native workflow and skill bytes.
+- [Choose and move data stores](https://docs.tale.dev/self-hosted/configuration/data-residency.md): Separate deployment defaults from organization storage, configure knowledge and file connections, and plan existing-data migration.
+- [Environment reference](https://docs.tale.dev/self-hosted/configuration/environment-reference.md): Deployment variables, defaults, secret injection, and the services that need each setting.
+- [Observability configuration](https://docs.tale.dev/self-hosted/configuration/observability-config.md): Collect container logs, scrape authenticated metrics and choose where errors are reported.
+- [Providers](https://docs.tale.dev/self-hosted/configuration/providers.md): Configure custom AI endpoints, understand provider definitions, and supply credentials from deployment secrets.
+- [Configure retention bounds](https://docs.tale.dev/self-hosted/configuration/retention.md): Set organization retention bounds, apply policy changes deliberately and understand which data the cleanup job removes.
+- [Protect configuration secrets with SOPS](https://docs.tale.dev/self-hosted/configuration/secrets-with-sops.md): Distinguish file and database encryption, configure age keys, and rotate file-encryption keys without losing access.
+- [TLS and domains](https://docs.tale.dev/self-hosted/configuration/tls-and-domains.md): Choose certificate handling, configure public origins, and verify browser and identity-provider access after a domain change.
+- [Configure video transcript ingestion](https://docs.tale.dev/self-hosted/configuration/video-ingestion.md): Diagnose transcript retrieval, configure the token provider or proxy, and manage organization-scoped browser sessions.
+- [Run Tale on your infrastructure](https://docs.tale.dev/self-hosted.md): Choose an installation path, understand your operating responsibilities, and find the configuration and maintenance guides.
+- [Install the tale CLI](https://docs.tale.dev/self-hosted/install/cli-install.md): Install the tale CLI on macOS, Linux, or Windows — and configure it against your self-hosted instance for deploys and upgrades.
+- [Create the first owner account](https://docs.tale.dev/self-hosted/install/first-admin.md): Complete first-time setup, confirm ownership and prepare the instance for teammates.
+- [Choose an installation method](https://docs.tale.dev/self-hosted/install.md): Use the Tale CLI for a workspace deployment, or run the documented service contract in your own infrastructure tooling.
+- [Deploy on Kubernetes](https://docs.tale.dev/self-hosted/install/kubernetes.md): Apply a complete set of Kubernetes manifests for Tale, run the sandbox spawner on its native backend, and verify isolation, session lifecycle, and rollouts before you admit users.
+- [Run Compose yourself](https://docs.tale.dev/self-hosted/install/own-compose.md): Assemble Tale's images, stores, networks, secrets, and health probes when your team owns the orchestration.
+- [Run your first self-hosted instance](https://docs.tale.dev/self-hosted/install/quickstart.md): Install the CLI, start Tale locally, create your owner account and verify a first chat reply.
+- [Backups and restore](https://docs.tale.dev/self-hosted/operate/backups-and-restore.md): Plan the complete recovery set, create and copy CLI snapshots, then restore data with its matching Tale version.
+- [Find the service behind a failure](https://docs.tale.dev/self-hosted/operate/container-architecture.md): Trace requests, background work, and sandbox execution to the right logs and understand automatic knowledge-index repair.
+- [Monitor and respond to incidents](https://docs.tale.dev/self-hosted/operate/observability/operations.md): Choose actionable health signals, understand the exported metrics, and investigate failures without losing evidence.
+- [Prometheus and Grafana](https://docs.tale.dev/self-hosted/operate/observability/prometheus-grafana.md): Collect Tale metrics with a token file, validate scrape and alert configuration, and build a dashboard from the available series.
+- [Troubleshoot a self-hosted instance](https://docs.tale.dev/self-hosted/operate/observability/troubleshooting.md): Start with the failing action, inspect the right service, and recover without deleting data or masking the cause.
+- [Review a release before upgrading](https://docs.tale.dev/self-hosted/operate/release-notes/format.md): Find the target release, assess changes that affect your deployment, and prepare the upgrade.
+- [Follow security advisories](https://docs.tale.dev/self-hosted/operate/security/advisories.md): Find published security notices, assess whether your deployment is affected, and report a vulnerability privately.
+- [Investigate audit-log integrity](https://docs.tale.dev/self-hosted/operate/security/audit-log-integrity.md): Check the audit chain, understand the verification limits, and preserve evidence when a check fails.
+- [Cryptography and key ownership](https://docs.tale.dev/self-hosted/operate/security/cryptography.md): Identify the encryption, password and audit keys your deployment depends on, and plan their recovery.
+- [Harden a production deployment](https://docs.tale.dev/self-hosted/operate/security/hardening.md): Protect host access, network exposure, secrets and recovery before opening Tale to users.
+- [Upgrade and recover a deployment](https://docs.tale.dev/self-hosted/operate/upgrades.md): Preview a workspace upgrade, deploy with a recovery plan, verify the result, and choose the correct rollback path.
+- [Self-hosted architecture](https://docs.tale.dev/self-hosted/overview.md): Understand the application, storage, and sandbox services before choosing how to deploy and operate Tale.
+
+## Tutorials
+
+- [Connect a local model server](https://docs.tale.dev/tutorials/admin/connect-local-provider.md): Coordinate the local endpoint with an operator, add a provider credential and verify a model request.
+- [Make a meeting transcript searchable](https://docs.tale.dev/tutorials/admin/meeting-transcription.md): Import a reviewed transcript into the right project, verify indexing and prepare a repeatable handoff.
+- [Call Tale from a script](https://docs.tale.dev/tutorials/developer/call-tale-from-a-script.md): Create an API key, choose an available model and print a completed assistant reply with Python.
+- [Trigger an automation via webhook](https://docs.tale.dev/tutorials/developer/trigger-automation-via-webhook.md): Install a deployed automation in a project, bind a webhook, send a delivery and verify the completed run.
+- [Build your first agent](https://docs.tale.dev/tutorials/editor/first-agent-end-to-end.md): Create a project agent for a small text task, start it from the board, and review its result.
+- [Build a workflow with an approval](https://docs.tale.dev/tutorials/editor/workflow-with-approvals.md): Import a small workflow, test its proposed email, then inspect and reject the live approval without sending it.
+- [Get a useful answer from chat](https://docs.tale.dev/tutorials/member/chat-effectively.md): Practice asking a focused question, checking a citation, and improving the answer with a follow-up.
+- [Use a project for shared context](https://docs.tale.dev/tutorials/member/use-projects.md): Ask a question that a project's files answer, share the conversation, and hand the follow-up work to a project agent.
+- [Tutorials](https://docs.tale.dev/tutorials/overview.md): Practice a complete task with prerequisites, sample inputs, and a result you can check.
+- [Episode 5 — Automations & approvals](https://docs.tale.dev/tutorials/videos/automations-and-approvals.md): Use a live automation end to end — read the triage workflow, trigger a real run from the board, debug the run that failed, and approve an outbound email yourself.
+- [Episode 2 — Chat, in depth](https://docs.tale.dev/tutorials/videos/chat-in-depth.md): A real working session — the same question ungrounded and grounded, a source check, an Arena verdict with reasons, and a brief built and refined on the canvas.
+- [Episode 7 — Connectors & the outside world](https://docs.tale.dev/tutorials/videos/connectors.md): The doors out of the workspace — connectors whose operations and allowed hosts you can read, the deep-research payoff of a bound connector, an MCP segment recorded on the earlier version's server panel, and fail-closed egress.
+- [Episode 9 — Governance, cost & trust](https://docs.tale.dev/tutorials/videos/governance-and-trust.md): The series finale - the control room in one tour — providers and model policy, guardrails, the audit log, usage and feedback analytics, data residency — and the five habits the whole series was building toward.
+- [Video tutorials](https://docs.tale.dev/tutorials/videos.md): Short, produced walkthroughs of the platform — what Tale does, where AI helps, and where it needs your judgment.
+- [Episode 3 — Knowledge](https://docs.tale.dev/tutorials/videos/knowledge.md): Put a fact in and get it back cited — a knowledge entry created on camera, the Indexed badge explained, a record looked up, the crawler's boundary read, and a stale-knowledge trap shown live.
+- [Episode 8 — People, roles & teams](https://docs.tale.dev/tutorials/videos/people-roles-and-teams.md): The human half of the trust story — the members table and the role ladder, teams as knowledge walls, and identity hygiene, with least privilege on both sides of the table.
+- [Episode 6 — Projects with AI](https://docs.tale.dev/tutorials/videos/projects-with-ai.md): The shared workspace deep dive — the board mid-flight, project files as scoped context, discussions beside the tasks, and a task created on camera that an agent visibly picks up.
+- [Bonus — Tale for developers](https://docs.tale.dev/tutorials/videos/tale-for-developers.md): The builder's lap - scoped API keys, the four API doors, webhook triggers, and agent runtimes working in contained sandboxes.
+- [Episode 1 — Welcome to Tale](https://docs.tale.dev/tutorials/videos/welcome-to-tale.md): The guided tour of the workspace — ask a grounded question, find the cited file in Knowledge, meet the agent that answered, and read a live automation's journal.
+- [Episode 4 — Your first agent](https://docs.tale.dev/tutorials/videos/your-first-agent.md): An agent built end to end on camera in the earlier agent editor — name, instructions, knowledge scope, tools, model — with the trust boundary spelled out; the screens have changed since, the reasoning has not.
+
+## Legal
+
+- [Privacy and your data](https://docs.tale.dev/legal/privacy.md): Find the applicable privacy policy, understand the organization's role, and request access, correction, or erasure.
+- [Subprocessors](https://docs.tale.dev/legal/subprocessors.md): Find Tale Cloud's authoritative subprocessor list and understand how hosting, model providers, and your own integrations fit together.
+
+## Optional
+
+- [OpenAPI specification](https://docs.tale.dev/develop/api-reference.md)
+- [GitHub](https://github.com/tale-project/tale)

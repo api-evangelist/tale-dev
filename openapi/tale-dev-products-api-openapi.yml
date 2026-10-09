@@ -1,0 +1,1460 @@
+openapi: 3.2.0
+info:
+  title: Tale Dev Products API
+  version: 3.27.0
+  contact:
+    name: Tale
+    url: https://tale.dev
+  description: 'Operations tagged Products across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: '{origin}'
+  description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+  variables:
+    origin:
+      default: https://your-host.example.com
+      description: Scheme and host of the Tale deployment
+security:
+- bearerAuth: []
+tags:
+- name: Products
+  description: Product catalog entries.
+paths:
+  /api/v1/products:
+    get:
+      tags:
+      - Products
+      summary: List products
+      description: Most recently updated first — ordered by `updatedAt`, then `id`, both descending; the cursor is that pair, so a product updated (or created) while you page moves ahead of the cursor and is not served again in that pass. A full reconciliation re-runs the pass until two consecutive passes agree, or compares `updatedAt` per record. Filters combine with AND.
+      operationId: listProducts
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: The previous page’s `continueCursor`, unchanged — opaque; omit for the first page. A value this list did not answer is refused with 400 `INVALID_CURSOR` rather than read as the first page
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 25
+        description: Page size, 1..200 (default 25; out-of-range numbers are clamped, a value that is not a number answers 400 `INVALID_LIMIT`)
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - active
+          - inactive
+          - draft
+          - archived
+        description: Only products in this status — the closed set the write side takes; any other value answers 400 `INVALID_QUERY` naming the set
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Only products in this category
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      responses:
+        '200':
+          description: Paginated products
+          content:
+            application/json:
+              schema:
+                type: object
+                x-tale-pagination: keyset
+                required:
+                - page
+                - isDone
+                - continueCursor
+                properties:
+                  page:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  isDone:
+                    type: boolean
+                  continueCursor:
+                    type: string
+                    description: Pass back as `cursor` for the next page; empty when `isDone`
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '304':
+          description: Not Modified — `If-None-Match` named the current `ETag`, so the body is not sent
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: '`X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    post:
+      tags:
+      - Products
+      summary: Create product
+      operationId: createProduct
+      description: 'Create a product in the organization’s catalog: `name` is required and unique per organization regardless of case (409 `DUPLICATE_PRODUCT_NAME`), `externalId` unique when given (409 `DUPLICATE_PRODUCT_EXTERNAL_ID`).'
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/ProductInput'
+              required:
+              - name
+      responses:
+        '201':
+          description: Created — the product’s id
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                properties:
+                  id:
+                    type: string
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: '`X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: Duplicate name (`DUPLICATE_PRODUCT_NAME`) or external id (`DUPLICATE_PRODUCT_EXTERNAL_ID`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds this operation’s byte cap — 1 MiB unless the description says otherwise (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+  /api/v1/products/{id}:
+    get:
+      tags:
+      - Products
+      summary: Get product
+      operationId: getProduct
+      description: One product by id; a deleted product or one in another organization answers 404 `PRODUCT_NOT_FOUND`.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      responses:
+        '200':
+          description: The product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '304':
+          description: Not Modified — `If-None-Match` named the current `ETag`, so the body is not sent
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: Product not found; or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    patch:
+      tags:
+      - Products
+      summary: Update product
+      operationId: updateProduct
+      description: Update the fields sent and keep the rest — `metadata` merges (RFC 7396), `null` clears — and answer the product as it now stands.
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductPatch'
+      responses:
+        '200':
+          description: The updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: Product not found (`PRODUCT_NOT_FOUND`); or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: Duplicate name (`DUPLICATE_PRODUCT_NAME`) or external id (`DUPLICATE_PRODUCT_EXTERNAL_ID`), or a stale `expectedUpdatedAt` (`PRODUCT_STALE`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '413':
+          description: The body exceeds this operation’s byte cap — 1 MiB unless the description says otherwise (`BODY_TOO_LARGE`); the envelope carries a `requestId`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    delete:
+      tags:
+      - Products
+      summary: Delete product
+      operationId: deleteProduct
+      description: 'Deletes the product permanently — products have no trash and no restore, unlike contacts: its `name` and `externalId` are free for a new product at once (a re-created product is a new row with a new id, so a catalog sync must re-key anything it holds on the old one). A product already deleted answers 404 `PRODUCT_NOT_FOUND`. Legal holds gate the delete the way they gate document and contact deletes: an organization-wide hold, or a custodian hold on the user who uploaded the product’s image, answers 409 `LEGAL_HOLD_ACTIVE` and nothing is removed.'
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: X-Organization-Slug
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The organization to operate on. STRICTLY REQUIRED on every call, reads included, when the key holder belongs to more than one organization — without it such requests are refused with 400 `ORG_SLUG_REQUIRED` (the dashboard’s last-active organization never steers a machine call). A slug that names no organization answers 404 `ORG_SLUG_INVALID`, one the key holder is no member of 403 `ORG_FORBIDDEN`. Single-organization keys may omit it; a blank or whitespace-only value reads as the header absent. Each of the three refusals lists the slugs the key holder may send under `data.organizations`; `GET /api/v1/me` answers them too.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Product ID
+      - name: X-Request-Id
+        in: header
+        required: false
+        description: 'Your own correlation id, echoed back on the response and written to the platform’s log: up to 255 characters of letters, digits, `_`, `-` and `=`. Any other value is replaced by a fresh UUID (the response carries the id that was used), and uniqueness of an id you choose is yours to keep.'
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_=-]{1,255}$
+      responses:
+        '204':
+          description: Deleted
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '400':
+          description: 'Invalid request: a body the schema refuses — a wrong type, an unknown key, a missing field, a NUL or an unpaired surrogate, a whole number beyond 2^53 − 1 (`INVALID_BODY`, every problem under `data.issues`); a query parameter the operation does not take, given twice or left blank (`INVALID_QUERY`); on a list, a `limit` that is not a whole number (`INVALID_LIMIT`) or a `cursor` this list did not answer (`INVALID_CURSOR`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '401':
+          description: Missing or invalid API key (`UNAUTHORIZED`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            WWW-Authenticate:
+              $ref: '#/components/headers/WWWAuthenticate'
+        '403':
+          description: '`X-Organization-Slug` names an organization the key holder is no member of (`ORG_FORBIDDEN`, with the slugs the key holder may send under `data.organizations`)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '404':
+          description: Product not found; or `X-Organization-Slug` names no organization (`ORG_SLUG_INVALID`, with the slugs the key holder may send under `data.organizations`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '405':
+          description: The path exists, but not for this method (`METHOD_NOT_ALLOWED`); `Allow` names the methods it serves
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Allow:
+              $ref: '#/components/headers/Allow'
+        '409':
+          description: A legal hold on the organization, or on the uploader of the product’s image (`LEGAL_HOLD_ACTIVE`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '429':
+          description: 'The key holder’s request budget is spent (`RATE_LIMITED`): `Retry-After` names the wait in whole seconds and `data.retryAfterMs` in milliseconds; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+        '500':
+          description: Internal error (`INTERNAL_ERROR`); the envelope carries a `requestId` to quote when reporting it
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+        '503':
+          description: 'The platform’s database is restarting or cannot be reached (`DATABASE_UNAVAILABLE`): `Retry-After` names the wait in whole seconds — retry with backoff; the envelope carries a `requestId`'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            X-Tale-Api-Version:
+              $ref: '#/components/headers/XTaleApiVersion'
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+    servers:
+    - url: '{origin}'
+      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
+      variables:
+        origin:
+          default: https://your-host.example.com
+          description: Scheme and host of the Tale deployment
+components:
+  schemas:
+    ProductPatch:
+      type: object
+      description: 'Every field optional. `null` clears any optional field, and a blank string reads as `null` (a blank `name` is refused); `metadata` merges per RFC 7396. Send `expectedUpdatedAt` from the last product read to update only that revision: a stale one answers 409 `PRODUCT_STALE` without changing any field, and a patch that changes nothing — an empty body, or every field already at its value — writes nothing and leaves `updatedAt` alone (the document rule), so it never spends another client’s `expectedUpdatedAt`; a write that changes something advances `updatedAt`, even within one millisecond.'
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Trimmed; a blank name is refused
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 4000
+          description: Trimmed
+        imageUrl:
+          type:
+          - string
+          - 'null'
+          format: uri
+          maxLength: 2048
+          description: 'An absolute http(s) URL, trimmed; any other value (a relative path, a `javascript:` or `ftp:` URL) answers 400. The host is held to the crawl-target rule by name and by IP literal — loopback, link-local, private-network (RFC 1918, CGNAT, ULA, `.internal`/`.lan`-style suffixes, single-label names) and cloud metadata hosts answer 400 `INVALID_BODY` — as a string, without a DNS lookup: a public name that resolves to a private address passes here. The platform never fetches the URL; the rule keeps a stored URL from becoming a server-side request later. `TALE_ALLOW_PRIVATE_CRAWL_HOSTS=1` lifts the private-network half, never the metadata half. Exception: an exact managed product-image URL returned by this deployment may be replayed, including on a private deployment. It must name registered image metadata in this organization that the caller uploaded or a current product already uses; a missing or inaccessible image answers 404 `FILE_NOT_FOUND`. The app accepts inspected PNG, JPEG, WebP, GIF, or SVG uploads up to 5 MiB. Its bytes require an authorized app session; an API key does not authorize this app route.'
+        stock:
+          type:
+          - number
+          - 'null'
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        price:
+          type:
+          - number
+          - 'null'
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        currency:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z]{3}$
+          minLength: 3
+          maxLength: 3
+          description: An ISO 4217 code (`USD`, `EUR`) — any case in, stored uppercase; a code the platform does not know answers 400
+        category:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+          description: Trimmed
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            maxLength: 60
+            description: Trimmed
+          maxItems: 50
+        status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - active
+          - inactive
+          - draft
+          - archived
+          - null
+        externalId:
+          type:
+          - string
+          - 'null'
+          maxLength: 256
+          description: Trimmed
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+          maxProperties: 500
+          description: Free-form. On PATCH it MERGES per RFC 7396 — sent keys are set, omitted keys stay, a key sent as `null` is removed, and the whole field sent as `null` clears it. At most 64 KiB of JSON, 8 levels of nesting and 500 keys in total (every nested object counted); a larger value answers 400 `INVALID_BODY` naming the path.
+        expectedUpdatedAt:
+          type: integer
+          minimum: 0
+          maximum: 8640000000000000
+          description: The `updatedAt` of the revision this update is based on
+    ProductInput:
+      type: object
+      description: '`name` is required on create; every field is optional on update. Strings are trimmed, and a blank optional field — or one sent as `null` — reads as left out. Unknown keys are refused (`INVALID_BODY`).'
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Trimmed; a blank name is refused
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 4000
+          description: Trimmed
+        imageUrl:
+          type:
+          - string
+          - 'null'
+          format: uri
+          maxLength: 2048
+          description: 'An absolute http(s) URL, trimmed; any other value (a relative path, a `javascript:` or `ftp:` URL) answers 400. The host is held to the crawl-target rule by name and by IP literal — loopback, link-local, private-network (RFC 1918, CGNAT, ULA, `.internal`/`.lan`-style suffixes, single-label names) and cloud metadata hosts answer 400 `INVALID_BODY` — as a string, without a DNS lookup: a public name that resolves to a private address passes here. The platform never fetches the URL; the rule keeps a stored URL from becoming a server-side request later. `TALE_ALLOW_PRIVATE_CRAWL_HOSTS=1` lifts the private-network half, never the metadata half. Exception: an exact managed product-image URL returned by this deployment may be replayed, including on a private deployment. It must name registered image metadata in this organization that the caller uploaded or a current product already uses; a missing or inaccessible image answers 404 `FILE_NOT_FOUND`. The app accepts inspected PNG, JPEG, WebP, GIF, or SVG uploads up to 5 MiB. Its bytes require an authorized app session; an API key does not authorize this app route.'
+        stock:
+          type:
+          - number
+          - 'null'
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        price:
+          type:
+          - number
+          - 'null'
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        currency:
+          type:
+          - string
+          - 'null'
+          pattern: ^[A-Za-z]{3}$
+          minLength: 3
+          maxLength: 3
+          description: An ISO 4217 code (`USD`, `EUR`) — any case in, stored uppercase; a code the platform does not know answers 400
+        category:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+          description: Trimmed
+        tags:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+            maxLength: 60
+            description: Trimmed
+          maxItems: 50
+        status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - active
+          - inactive
+          - draft
+          - archived
+          - null
+        externalId:
+          type:
+          - string
+          - 'null'
+          maxLength: 256
+          description: Trimmed
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+          maxProperties: 500
+          description: Free-form. On PATCH it MERGES per RFC 7396 — sent keys are set, omitted keys stay, a key sent as `null` is removed, and the whole field sent as `null` clears it. At most 64 KiB of JSON, 8 levels of nesting and 500 keys in total (every nested object counted); a larger value answers 400 `INVALID_BODY` naming the path.
+    Product:
+      type: object
+      required:
+      - id
+      - organizationId
+      - name
+      - tags
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        name:
+          type: string
+        description:
+          type:
+          - string
+          - 'null'
+        imageUrl:
+          type:
+          - string
+          - 'null'
+          format: uri
+          description: An absolute image URL. App-uploaded images use a stable, organization-protected app URL and require an authorized app session to view; external image URLs keep their original access rules.
+        stock:
+          type:
+          - number
+          - 'null'
+        price:
+          type:
+          - number
+          - 'null'
+        currency:
+          type:
+          - string
+          - 'null'
+        category:
+          type:
+          - string
+          - 'null'
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type:
+          - string
+          - 'null'
+        translations:
+          type:
+          - array
+          - 'null'
+          readOnly: true
+          description: 'Reserved: per-language overrides of the catalog fields. Read-only and always null on this surface today — no input schema takes it and nothing writes it; a localized catalog is a later addition, and the field is declared so a client generated now keeps its shape then.'
+          items:
+            type: object
+            required:
+            - language
+            properties:
+              language:
+                type: string
+                description: A BCP 47 language tag (`de`, `fr-CH`)
+              name:
+                type: string
+              description:
+                type: string
+              category:
+                type: string
+              tags:
+                type: array
+                items:
+                  type: string
+              metadata:
+                type: object
+                additionalProperties: true
+        externalId:
+          type:
+          - string
+          - 'null'
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+          description: What went wrong
+        code:
+          type: string
+          enum:
+          - ACTOR_AMBIGUOUS
+          - ACTOR_DISABLED
+          - ACTOR_FORBIDDEN
+          - ACTOR_NOT_FOUND
+          - ACTOR_REBOUND
+          - ACTOR_UNVERIFIED
+          - API_KEY_SCOPE_FORBIDDEN
+          - ATTACHMENT_NOT_FOUND
+          - ATTACHMENT_NOT_OWNED
+          - ATTACHMENT_NOT_STAGED
+          - ATTACHMENT_SIZE_MISMATCH
+          - AUTHOR_UNVERIFIED
+          - AUTOMATION_DELIVERY_SCOPE_MISMATCH
+          - AUTOMATION_HAS_ACTIVE_RUNS
+          - AUTOMATION_INPUT_INVALID
+          - AUTOMATION_NOT_DEPLOYED
+          - AUTOMATION_NOT_FOUND
+          - AUTOMATION_NOT_INSTALLED
+          - AUTOMATION_PROJECT_FORBIDDEN
+          - AUTOMATION_PROJECT_SCOPE_REQUIRED
+          - AUTOMATION_TRIGGER_INVALID
+          - AUTOMATION_VERSION_NOT_DEPLOYED
+          - AUTOMATION_VERSION_UNKNOWN
+          - BLOB_NOT_FOUND
+          - BODY_CHUNK_MALFORMED
+          - BODY_LENGTH_MISMATCH
+          - BODY_TOO_LARGE
+          - BROWSER_SESSION_NOT_FOUND
+          - BUDGET_EXCEEDED
+          - CHAT_MODEL_AMBIGUOUS
+          - CHAT_MODEL_NOT_ON_PROVIDER
+          - CHAT_MODEL_UNKNOWN
+          - CHAT_PROVIDER_UNKNOWN
+          - CHAT_THREAD_ARCHIVED
+          - CHAT_THREAD_NOT_DIRECT
+          - CHAT_TURN_IN_PROGRESS
+          - CHAT_TURN_NOT_RUNNING
+          - CONTACT_AMBIGUOUS
+          - CONTACT_DUPLICATE_EMAIL
+          - CONTACT_DUPLICATE_EXTERNAL_ID
+          - CONTACT_IDENTITY_REQUIRED
+          - CONTACT_NOT_FOUND
+          - CONTACT_STALE
+          - CONVERSATION_CLOSED
+          - CONVERSATION_CONTACT_CONFLICT
+          - CONVERSATION_CONTACT_TRASHED
+          - CONVERSATION_NOT_FOUND
+          - CONVERSATION_SNAPSHOT_CONFLICT
+          - CONVERSATION_SOURCE_NOT_FOUND
+          - DATABASE_UNAVAILABLE
+          - DELIVERY_NOT_FOUND
+          - DELIVERY_RECEIPT_CONFLICT
+          - DELIVERY_RETRY_UNAVAILABLE
+          - DELIVERY_UNACKNOWLEDGED
+          - DOCUMENT_HAS_KNOWLEDGE_ENTRY
+          - DOCUMENT_NOT_FOUND
+          - DOCUMENT_RECORD_FROZEN
+          - DOCUMENT_RECORD_PROTECTED
+          - DOCUMENT_RECORD_REPLACEMENT_REQUIRED
+          - DOCUMENT_STALE
+          - DUPLICATE_PRODUCT_EXTERNAL_ID
+          - DUPLICATE_PRODUCT_NAME
+          - EMBEDDING_CREDENTIAL_REJECTED
+          - EMBEDDING_CREDIT_EXHAUSTED
+          - EMBEDDING_NOT_CONFIGURED
+          - EMBEDDING_UPSTREAM_ERROR
+          - EMPTY_ANSWER
+          - FILE_NOT_FOUND
+          - FILE_SIZE_INVALID
+          - FILE_TOO_LARGE
+          - FOLDER_DEPTH_EXCEEDED
+          - FOLDER_NAME_INVALID
+          - FOLDER_NAME_TAKEN
+          - FOLDER_NOT_ACCESSIBLE
+          - FOLDER_NOT_FOUND
+          - FORBIDDEN_DEPLOYMENT_EDITOR
+          - FORBIDDEN_INSTANCE_ADMIN
+          - HTTP_ERROR
+          - HUMAN_ASK_EXPIRED
+          - HUMAN_ASK_NOT_FOUND
+          - HUMAN_ASK_NOT_PENDING
+          - IDEMPOTENCY_KEY_REUSED
+          - INTEGRATION_NOT_OWNED
+          - INTERNAL_ERROR
+          - INVALID_BODY
+          - INVALID_CURSOR
+          - INVALID_HEADER
+          - INVALID_LIMIT
+          - INVALID_QUERY
+          - INVALID_SESSION
+          - INVALID_SKILL
+          - INVALID_SKILL_SLUG
+          - INVALID_URL
+          - KNOWLEDGE_ENTRY_DUPLICATE
+          - KNOWLEDGE_ENTRY_FORBIDDEN
+          - KNOWLEDGE_ENTRY_NOT_FOUND
+          - KNOWLEDGE_ENTRY_STORE_TIMEOUT
+          - KNOWLEDGE_ENTRY_SUPERSEDED
+          - LEGAL_HOLD_ACTIVE
+          - MENTION_DIRECTORY_UNAVAILABLE
+          - MESSAGE_NOT_FOUND
+          - METHOD_NOT_ALLOWED
+          - MODEL_API_CONCURRENCY_EXCEEDED
+          - MODEL_API_DISABLED
+          - MODEL_API_FORBIDDEN
+          - MODEL_API_GUARDRAIL_BLOCKED
+          - MODEL_API_GUARDRAIL_UNAVAILABLE
+          - MODEL_API_GUARDRAIL_UNSUPPORTED
+          - MODEL_API_MODEL_FORBIDDEN
+          - MODEL_API_MODEL_UNKNOWN
+          - MODEL_API_TEXT_TOO_LARGE
+          - MODEL_API_TOOLS_UNSUPPORTED
+          - MODEL_API_UNAVAILABLE
+          - MODEL_API_UPSTREAM_ERROR
+          - MODEL_API_VENDOR_TOOL_UNSUPPORTED
+          - MODEL_API_VISION_UNSUPPORTED
+          - NOT_FOUND
+          - OBJECT_STORE_UNAVAILABLE
+          - OBJECT_STORE_UNCONFIGURED
+          - ORG_FORBIDDEN
+          - ORG_SLUG_INVALID
+          - ORG_SLUG_REQUIRED
+          - ORIGIN_FORBIDDEN
+          - PRECONDITION_FAILED
+          - PRODUCT_NOT_FOUND
+          - PRODUCT_STALE
+          - PROJECT_AGENT_CONNECTOR_UNKNOWN
+          - PROJECT_AGENT_HARNESS_INVALID
+          - PROJECT_AGENT_LIMIT
+          - PROJECT_AGENT_MANAGED
+          - PROJECT_AGENT_MODEL_INVALID
+          - PROJECT_AGENT_NAME_TAKEN
+          - PROJECT_AGENT_NOT_FOUND
+          - PROJECT_AGENT_PROVIDER_UNKNOWN
+          - PROJECT_AGENT_SECRETS_FORBIDDEN
+          - PROJECT_AGENT_SECRET_UNKNOWN
+          - PROJECT_AGENT_SKILL_UNKNOWN
+          - PROJECT_AGENT_STALE
+          - PROJECT_AGENT_TOOL_UNKNOWN
+          - PROJECT_ARCHIVED
+          - PROJECT_DUPLICATE_EXTERNAL_ID
+          - PROJECT_FORBIDDEN
+          - PROJECT_HAS_BOUND_AUTOMATIONS
+          - PROJECT_HAS_PROTECTED_RECORDS
+          - PROJECT_KEY_INVALID
+          - PROJECT_KEY_TAKEN
+          - PROJECT_LEGAL_HOLD
+          - PROJECT_NOT_FOUND
+          - PROJECT_SHARING_INVALID
+          - PURGE_INCOMPLETE
+          - RATE_LIMITED
+          - RBAC_FORBIDDEN
+          - REQUEST_TIMEOUT
+          - REVIEW_COMPETENCE_REQUIRED
+          - REVIEW_INDEPENDENT_REVIEWER_REQUIRED
+          - ROLE_FORBIDDEN
+          - RUN_ACTIVE
+          - RUN_NOT_FOUND
+          - RUN_QUARANTINED
+          - RUN_QUARANTINE_CHANGED
+          - SETUP_FOLDER_MISSING
+          - SKILL_EXISTS
+          - SKILL_FILE_NOT_FOUND
+          - SKILL_FORBIDDEN
+          - SKILL_MALFORMED
+          - SKILL_NOT_FOUND
+          - SKILL_PUBLISH_FORBIDDEN
+          - SKILL_STALE
+          - SKILL_TEAM_UNKNOWN
+          - STANDARD_AGENT_OFF
+          - STANDARD_AGENT_UNAVAILABLE
+          - TASK_AGENT_REVIEW_REQUIRED
+          - TASK_ARCHIVED
+          - TASK_AUTOMATION_DISABLED
+          - TASK_AUTOMATION_UNAVAILABLE
+          - TASK_EXTERNAL_REF_INVALID
+          - TASK_EXTERNAL_STATUS_STALE
+          - TASK_HAS_LIVE_RUN
+          - TASK_HAS_OPEN_SUBTASKS
+          - TASK_LABEL_UNKNOWN
+          - TASK_NOT_FOUND
+          - TASK_NOT_IN_REVIEW
+          - TASK_REVIEW_POLICY_UNAVAILABLE
+          - TASK_STATUS_CONFLICT
+          - TEAM_ACCESS_DENIED
+          - TEAM_INHERITED_FROM_FOLDER
+          - TEAM_NOT_IN_ORG
+          - THREAD_NOT_FOUND
+          - UNAUTHORIZED
+          - UNSUPPORTED_FILE_TYPE
+          - UPLOAD_FILE_MISMATCH
+          - UPLOAD_INTENT_INVALID
+          - UPLOAD_POLICY_REJECTED
+          - UPSTREAM_UNAVAILABLE
+          - URI_TOO_LONG
+          - WEBSITE_DOMAIN_IMMUTABLE
+          - WEBSITE_DOMAIN_INVALID
+          - WEBSITE_DOMAIN_NOT_CRAWLABLE
+          - WEBSITE_DUPLICATE_DOMAIN
+          - WEBSITE_INVALID_LIST_URL
+          - WEBSITE_NOT_FOUND
+          description: 'A stable refusal code — every refusal the door itself makes carries one, and so does every domain refusal it lets through. The set is additive: a new code is a minor change, so treat a value you do not know as a generic refusal of the status you got.'
+        requestId:
+          type: string
+          description: The response’s `X-Request-Id`, repeated on a 429, on a 500, on a body-size 413 and on a URL-size 414 so a caller can quote it
+        data:
+          type: object
+          properties:
+            retryAfterMs:
+              type: number
+              description: Wait in milliseconds for RATE_LIMITED
+            providers:
+              type: array
+              items:
+                type: string
+              description: For CHAT_MODEL_AMBIGUOUS, the provider slugs that serve the model — name one as `providerSlug`
+            lastMessageId:
+              type: string
+              description: 'For CHAT_TURN_NOT_RUNNING, the newest assistant message on the thread (once it has one) — the idle poll’s own disambiguation: equal to the `messageId` a 202 named means that turn already settled'
+            lastStatus:
+              type: string
+              enum:
+              - pending
+              - complete
+              - failed
+              - cancelled
+              description: For CHAT_TURN_NOT_RUNNING, how `lastMessageId` settled (present with it)
+            organizations:
+              type: array
+              description: For ORG_SLUG_REQUIRED, ORG_SLUG_INVALID and ORG_FORBIDDEN, the organizations the key holder belongs to (a disabled membership is left out; the list is empty when none remains) — send one of the slugs as `X-Organization-Slug`
+              items:
+                type: object
+                required:
+                - slug
+                - name
+                properties:
+                  slug:
+                    type: string
+                  name:
+                    type: string
+            issues:
+              type: array
+              description: For INVALID_BODY and INVALID_QUERY, every problem the schema found in the body or the query string; for INVALID_LIMIT and INVALID_CURSOR, the one parameter refused (`limit`, `cursor`); for AUTOMATION_INPUT_INVALID, every problem the automation’s inputs schema found in the run input (at most 20 either way), each naming the field and the reason; `error` repeats the first one
+              items:
+                type: object
+                required:
+                - path
+                - message
+                properties:
+                  path:
+                    type: string
+                    description: The field, dotted for nesting (`address.city`, `contacts.2.email`); empty for a problem with the body as a whole
+                  message:
+                    type: string
+            scope:
+              type: string
+              enum:
+              - user
+              - team
+              - project
+              - org
+              - apiKey
+              description: 'For BUDGET_EXCEEDED, whose cap is reached: the key holder’s own (`user`), one of their teams’ (`team`), that of the project the work belongs to (`project`), the organization’s (`org`) or this API key’s (`apiKey`)'
+            period:
+              type: string
+              enum:
+              - daily
+              - weekly
+              - monthly
+              description: For BUDGET_EXCEEDED, what the cap counts over — a calendar day, ISO week or calendar month in UTC
+            limitCode:
+              type: string
+              enum:
+              - TOKEN_LIMIT
+              - COST_LIMIT
+              - REQUEST_LIMIT
+              description: 'For BUDGET_EXCEEDED, which cap is reached: tokens, cost in cents, or requests'
+            used:
+              type: number
+              description: For BUDGET_EXCEEDED, the usage the cap measured this period, in its unit (tokens, cents or requests)
+            limit:
+              type: number
+              description: For BUDGET_EXCEEDED, the cap, in the same unit
+            resetsAt:
+              type: number
+              description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
+  headers:
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
+x-refined-from:
+- tale-dev-openapi-original.json
+- tale-dev-openapi.yml

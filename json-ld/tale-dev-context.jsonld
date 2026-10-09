@@ -1,0 +1,1094 @@
+{
+  "@context": {
+    "@vocab": "https://tale.dev/schema#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "tale": "https://tale.dev/schema#",
+    "OpenAiError": "tale:OpenAiError",
+    "error": {
+      "@id": "tale:error"
+    },
+    "AnthropicError": "tale:AnthropicError",
+    "type": {
+      "@id": "tale:type",
+      "@type": "xsd:string"
+    },
+    "request_id": {
+      "@id": "tale:request_id",
+      "@type": "xsd:string"
+    },
+    "Error": "tale:Error",
+    "code": {
+      "@id": "tale:code",
+      "@type": "xsd:string"
+    },
+    "requestId": {
+      "@id": "tale:requestId",
+      "@type": "xsd:string"
+    },
+    "data": {
+      "@id": "tale:data"
+    },
+    "RetryIndexingResult": "tale:RetryIndexingResult",
+    "status": {
+      "@id": "tale:status",
+      "@type": "xsd:string"
+    },
+    "reason": {
+      "@id": "tale:reason",
+      "@type": "xsd:string"
+    },
+    "Document": "tale:Document",
+    "id": {
+      "@id": "tale:id",
+      "@type": "xsd:string"
+    },
+    "title": {
+      "@id": "tale:title",
+      "@type": "xsd:string"
+    },
+    "content": {
+      "@id": "tale:content",
+      "@type": "xsd:string"
+    },
+    "fileId": {
+      "@id": "tale:fileId",
+      "@type": "xsd:string"
+    },
+    "mimeType": {
+      "@id": "tale:mimeType",
+      "@type": "xsd:string"
+    },
+    "extension": {
+      "@id": "tale:extension",
+      "@type": "xsd:string"
+    },
+    "sourceProvider": {
+      "@id": "tale:sourceProvider",
+      "@type": "xsd:string"
+    },
+    "teamIds": {
+      "@id": "tale:teamIds",
+      "@container": "@list"
+    },
+    "teamId": {
+      "@id": "tale:teamId",
+      "@type": "xsd:string"
+    },
+    "folderId": {
+      "@id": "tale:folderId",
+      "@type": "xsd:string"
+    },
+    "metadata": {
+      "@id": "tale:metadata"
+    },
+    "contentHash": {
+      "@id": "tale:contentHash",
+      "@type": "xsd:string"
+    },
+    "createdBy": {
+      "@id": "tale:createdBy",
+      "@type": "xsd:string"
+    },
+    "createdAt": {
+      "@id": "tale:createdAt",
+      "@type": "xsd:integer"
+    },
+    "updatedAt": {
+      "@id": "tale:updatedAt",
+      "@type": "xsd:integer"
+    },
+    "indexing": {
+      "@id": "tale:indexing"
+    },
+    "DocumentInput": "tale:DocumentInput",
+    "DocumentPatch": "tale:DocumentPatch",
+    "expectedUpdatedAt": {
+      "@id": "tale:expectedUpdatedAt",
+      "@type": "xsd:integer"
+    },
+    "Website": "tale:Website",
+    "organizationId": {
+      "@id": "tale:organizationId",
+      "@type": "xsd:string"
+    },
+    "domain": {
+      "@id": "tale:domain",
+      "@type": "xsd:string"
+    },
+    "kind": {
+      "@id": "tale:kind",
+      "@type": "xsd:string"
+    },
+    "description": {
+      "@id": "tale:description",
+      "@type": "xsd:string"
+    },
+    "scanInterval": {
+      "@id": "tale:scanInterval",
+      "@type": "xsd:string"
+    },
+    "lastScannedAt": {
+      "@id": "tale:lastScannedAt",
+      "@type": "xsd:integer"
+    },
+    "pageCount": {
+      "@id": "tale:pageCount",
+      "@type": "xsd:integer"
+    },
+    "crawledPageCount": {
+      "@id": "tale:crawledPageCount",
+      "@type": "xsd:integer"
+    },
+    "failedPageCount": {
+      "@id": "tale:failedPageCount",
+      "@type": "xsd:integer"
+    },
+    "WebsiteInput": "tale:WebsiteInput",
+    "urls": {
+      "@id": "tale:urls",
+      "@container": "@list"
+    },
+    "WebsitePatch": "tale:WebsitePatch",
+    "WebsitePage": "tale:WebsitePage",
+    "url": {
+      "@id": "tale:url",
+      "@type": "xsd:string"
+    },
+    "wordCount": {
+      "@id": "tale:wordCount",
+      "@type": "xsd:integer"
+    },
+    "lastCrawledAt": {
+      "@id": "tale:lastCrawledAt",
+      "@type": "xsd:integer"
+    },
+    "discoveredAt": {
+      "@id": "tale:discoveredAt",
+      "@type": "xsd:integer"
+    },
+    "chunksCount": {
+      "@id": "tale:chunksCount",
+      "@type": "xsd:integer"
+    },
+    "indexed": {
+      "@id": "tale:indexed",
+      "@type": "xsd:boolean"
+    },
+    "failCount": {
+      "@id": "tale:failCount",
+      "@type": "xsd:integer"
+    },
+    "lastError": {
+      "@id": "tale:lastError",
+      "@type": "xsd:string"
+    },
+    "lastErrorKind": {
+      "@id": "tale:lastErrorKind",
+      "@type": "xsd:string"
+    },
+    "lastErrorAt": {
+      "@id": "tale:lastErrorAt",
+      "@type": "xsd:integer"
+    },
+    "WebsitePageList": "tale:WebsitePageList",
+    "pages": {
+      "@id": "tale:pages",
+      "@container": "@list"
+    },
+    "total": {
+      "@id": "tale:total",
+      "@type": "xsd:integer"
+    },
+    "offset": {
+      "@id": "tale:offset",
+      "@type": "xsd:integer"
+    },
+    "hasMore": {
+      "@id": "tale:hasMore",
+      "@type": "xsd:boolean"
+    },
+    "isDone": {
+      "@id": "tale:isDone",
+      "@type": "xsd:boolean"
+    },
+    "continueCursor": {
+      "@id": "tale:continueCursor",
+      "@type": "xsd:string"
+    },
+    "WebsiteSearchHit": "tale:WebsiteSearchHit",
+    "chunkIndex": {
+      "@id": "tale:chunkIndex",
+      "@type": "xsd:integer"
+    },
+    "score": {
+      "@id": "tale:score",
+      "@type": "xsd:decimal"
+    },
+    "WebsiteSearchResults": "tale:WebsiteSearchResults",
+    "results": {
+      "@id": "tale:results",
+      "@container": "@list"
+    },
+    "ConversationMirror": "tale:ConversationMirror",
+    "conversationId": {
+      "@id": "tale:conversationId",
+      "@type": "xsd:string"
+    },
+    "externalId": {
+      "@id": "tale:externalId",
+      "@type": "xsd:string"
+    },
+    "externalContactId": {
+      "@id": "tale:externalContactId",
+      "@type": "xsd:string"
+    },
+    "contactId": {
+      "@id": "tale:contactId",
+      "@type": "xsd:string"
+    },
+    "contactStatus": {
+      "@id": "tale:contactStatus",
+      "@type": "xsd:string"
+    },
+    "version": {
+      "@id": "tale:version",
+      "@type": "xsd:integer"
+    },
+    "sourceDeleted": {
+      "@id": "tale:sourceDeleted",
+      "@type": "xsd:boolean"
+    },
+    "subject": {
+      "@id": "tale:subject",
+      "@type": "xsd:string"
+    },
+    "ConversationDelivery": "tale:ConversationDelivery",
+    "messageId": {
+      "@id": "tale:messageId",
+      "@type": "xsd:string"
+    },
+    "attempts": {
+      "@id": "tale:attempts",
+      "@type": "xsd:integer"
+    },
+    "availableAt": {
+      "@id": "tale:availableAt",
+      "@type": "xsd:integer"
+    },
+    "retryAt": {
+      "@id": "tale:retryAt",
+      "@type": "xsd:integer"
+    },
+    "claimedAt": {
+      "@id": "tale:claimedAt",
+      "@type": "xsd:integer"
+    },
+    "failedAt": {
+      "@id": "tale:failedAt",
+      "@type": "xsd:integer"
+    },
+    "lastErrorCode": {
+      "@id": "tale:lastErrorCode",
+      "@type": "xsd:string"
+    },
+    "acknowledgedAt": {
+      "@id": "tale:acknowledgedAt",
+      "@type": "xsd:integer"
+    },
+    "receiptId": {
+      "@id": "tale:receiptId",
+      "@type": "xsd:string"
+    },
+    "BrowserSession": "tale:BrowserSession",
+    "label": {
+      "@id": "tale:label",
+      "@type": "xsd:string"
+    },
+    "expiresAt": {
+      "@id": "tale:expiresAt",
+      "@type": "xsd:integer"
+    },
+    "lastUsedAt": {
+      "@id": "tale:lastUsedAt",
+      "@type": "xsd:integer"
+    },
+    "failureCount": {
+      "@id": "tale:failureCount",
+      "@type": "xsd:integer"
+    },
+    "BrowserSessionImport": "tale:BrowserSessionImport",
+    "cookiesJar": {
+      "@id": "tale:cookiesJar",
+      "@type": "xsd:string"
+    },
+    "userAgent": {
+      "@id": "tale:userAgent",
+      "@type": "xsd:string"
+    },
+    "visitorData": {
+      "@id": "tale:visitorData",
+      "@type": "xsd:string"
+    },
+    "poToken": {
+      "@id": "tale:poToken",
+      "@type": "xsd:string"
+    },
+    "ttlMs": {
+      "@id": "tale:ttlMs",
+      "@type": "xsd:integer"
+    },
+    "Product": "tale:Product",
+    "name": {
+      "@id": "tale:name",
+      "@type": "xsd:string"
+    },
+    "imageUrl": {
+      "@id": "tale:imageUrl",
+      "@type": "@id"
+    },
+    "stock": {
+      "@id": "tale:stock",
+      "@type": "xsd:decimal"
+    },
+    "price": {
+      "@id": "tale:price",
+      "@type": "xsd:decimal"
+    },
+    "currency": {
+      "@id": "tale:currency",
+      "@type": "xsd:string"
+    },
+    "category": {
+      "@id": "tale:category",
+      "@type": "xsd:string"
+    },
+    "tags": {
+      "@id": "tale:tags",
+      "@container": "@list"
+    },
+    "translations": {
+      "@id": "tale:translations",
+      "@container": "@list"
+    },
+    "ProductInput": "tale:ProductInput",
+    "ProductPatch": "tale:ProductPatch",
+    "Team": "tale:Team",
+    "member": {
+      "@id": "tale:member",
+      "@type": "xsd:boolean"
+    },
+    "Me": "tale:Me",
+    "key": {
+      "@id": "tale:key"
+    },
+    "user": {
+      "@id": "tale:user"
+    },
+    "organization": {
+      "@id": "tale:organization"
+    },
+    "organizations": {
+      "@id": "tale:organizations",
+      "@container": "@list"
+    },
+    "capabilities": {
+      "@id": "tale:capabilities"
+    },
+    "Contact": "tale:Contact",
+    "email": {
+      "@id": "tale:email",
+      "@type": "xsd:string"
+    },
+    "phone": {
+      "@id": "tale:phone",
+      "@type": "xsd:string"
+    },
+    "source": {
+      "@id": "tale:source",
+      "@type": "xsd:string"
+    },
+    "locale": {
+      "@id": "tale:locale",
+      "@type": "xsd:string"
+    },
+    "address": {
+      "@id": "tale:address"
+    },
+    "notes": {
+      "@id": "tale:notes",
+      "@type": "xsd:string"
+    },
+    "lifecycleStatus": {
+      "@id": "tale:lifecycleStatus",
+      "@type": "xsd:string"
+    },
+    "ContactInput": "tale:ContactInput",
+    "ContactPatch": "tale:ContactPatch",
+    "BulkCreateResult": "tale:BulkCreateResult",
+    "success": {
+      "@id": "tale:success",
+      "@type": "xsd:integer"
+    },
+    "failed": {
+      "@id": "tale:failed",
+      "@type": "xsd:integer"
+    },
+    "created": {
+      "@id": "tale:created",
+      "@container": "@list"
+    },
+    "errors": {
+      "@id": "tale:errors",
+      "@container": "@list"
+    },
+    "Project": "tale:Project",
+    "externalItemId": {
+      "@id": "tale:externalItemId",
+      "@type": "xsd:string"
+    },
+    "archivedAt": {
+      "@id": "tale:archivedAt",
+      "@type": "xsd:integer"
+    },
+    "ProjectFolder": "tale:ProjectFolder",
+    "parentId": {
+      "@id": "tale:parentId",
+      "@type": "xsd:string"
+    },
+    "ProjectFolderResult": "tale:ProjectFolderResult",
+    "folder": {
+      "@id": "tale:folder",
+      "@type": "@id"
+    },
+    "ProjectUploadHandoff": "tale:ProjectUploadHandoff",
+    "maxBytes": {
+      "@id": "tale:maxBytes",
+      "@type": "xsd:integer"
+    },
+    "uploadId": {
+      "@id": "tale:uploadId",
+      "@type": "xsd:string"
+    },
+    "method": {
+      "@id": "tale:method",
+      "@type": "xsd:string"
+    },
+    "s3Ref": {
+      "@id": "tale:s3Ref",
+      "@type": "xsd:string"
+    },
+    "ProjectFile": "tale:ProjectFile",
+    "fileName": {
+      "@id": "tale:fileName",
+      "@type": "xsd:string"
+    },
+    "size": {
+      "@id": "tale:size",
+      "@type": "xsd:integer"
+    },
+    "Task": "tale:Task",
+    "projectId": {
+      "@id": "tale:projectId",
+      "@type": "xsd:string"
+    },
+    "externalSystem": {
+      "@id": "tale:externalSystem",
+      "@type": "xsd:string"
+    },
+    "externalUrl": {
+      "@id": "tale:externalUrl",
+      "@type": "xsd:string"
+    },
+    "descriptionText": {
+      "@id": "tale:descriptionText",
+      "@type": "xsd:string"
+    },
+    "labels": {
+      "@id": "tale:labels",
+      "@container": "@list"
+    },
+    "startDate": {
+      "@id": "tale:startDate",
+      "@type": "xsd:integer"
+    },
+    "dueDate": {
+      "@id": "tale:dueDate",
+      "@type": "xsd:integer"
+    },
+    "repeat": {
+      "@id": "tale:repeat"
+    },
+    "repeatNextTaskId": {
+      "@id": "tale:repeatNextTaskId",
+      "@type": "xsd:string"
+    },
+    "Actor": "tale:Actor",
+    "userId": {
+      "@id": "tale:userId",
+      "@type": "xsd:string"
+    },
+    "QuestionSet": "tale:QuestionSet",
+    "intro": {
+      "@id": "tale:intro",
+      "@type": "xsd:string"
+    },
+    "questions": {
+      "@id": "tale:questions",
+      "@container": "@list"
+    },
+    "PendingAsk": "tale:PendingAsk",
+    "askId": {
+      "@id": "tale:askId",
+      "@type": "xsd:string"
+    },
+    "runId": {
+      "@id": "tale:runId",
+      "@type": "xsd:string"
+    },
+    "nodeId": {
+      "@id": "tale:nodeId",
+      "@type": "xsd:string"
+    },
+    "question": {
+      "@id": "tale:question",
+      "@type": "xsd:string"
+    },
+    "taskId": {
+      "@id": "tale:taskId",
+      "@type": "xsd:string"
+    },
+    "ExternalStatusWorkflow": "tale:ExternalStatusWorkflow",
+    "actions": {
+      "@id": "tale:actions",
+      "@container": "@list"
+    },
+    "ExternalStatusDecision": "tale:ExternalStatusDecision",
+    "accepted": {
+      "@id": "tale:accepted",
+      "@type": "xsd:boolean"
+    },
+    "TaskStatusSnapshot": "tale:TaskStatusSnapshot",
+    "task": {
+      "@id": "tale:task"
+    },
+    "revision": {
+      "@id": "tale:revision",
+      "@type": "xsd:string"
+    },
+    "statusChangedAt": {
+      "@id": "tale:statusChangedAt",
+      "@type": "xsd:integer"
+    },
+    "change": {
+      "@id": "tale:change"
+    },
+    "externalStatus": {
+      "@id": "tale:externalStatus"
+    },
+    "workflow": {
+      "@id": "tale:workflow"
+    },
+    "request": {
+      "@id": "tale:request"
+    },
+    "TaskReview": "tale:TaskReview",
+    "approvalId": {
+      "@id": "tale:approvalId",
+      "@type": "xsd:string"
+    },
+    "round": {
+      "@id": "tale:round",
+      "@type": "xsd:integer"
+    },
+    "requestedFor": {
+      "@id": "tale:requestedFor",
+      "@type": "xsd:string"
+    },
+    "reviewer": {
+      "@id": "tale:reviewer"
+    },
+    "agentSlug": {
+      "@id": "tale:agentSlug",
+      "@type": "xsd:string"
+    },
+    "implementationAgentId": {
+      "@id": "tale:implementationAgentId",
+      "@type": "xsd:string"
+    },
+    "evidenceRevision": {
+      "@id": "tale:evidenceRevision",
+      "@type": "xsd:string"
+    },
+    "agentReviewBlockedReason": {
+      "@id": "tale:agentReviewBlockedReason",
+      "@type": "xsd:string"
+    },
+    "TaskUpsertResult": "tale:TaskUpsertResult",
+    "executionId": {
+      "@id": "tale:executionId",
+      "@type": "xsd:string"
+    },
+    "AutomationSummary": "tale:AutomationSummary",
+    "latestVersion": {
+      "@id": "tale:latestVersion",
+      "@type": "xsd:integer"
+    },
+    "deployedVersion": {
+      "@id": "tale:deployedVersion",
+      "@type": "xsd:integer"
+    },
+    "inputs": {
+      "@id": "tale:inputs"
+    },
+    "presentation": {
+      "@id": "tale:presentation"
+    },
+    "trigger": {
+      "@id": "tale:trigger"
+    },
+    "projectIds": {
+      "@id": "tale:projectIds",
+      "@container": "@list"
+    },
+    "Automation": "tale:Automation",
+    "document": {
+      "@id": "tale:document"
+    },
+    "message": {
+      "@id": "tale:message",
+      "@type": "xsd:string"
+    },
+    "testsPassed": {
+      "@id": "tale:testsPassed",
+      "@type": "xsd:boolean"
+    },
+    "testsCheckedAt": {
+      "@id": "tale:testsCheckedAt",
+      "@type": "xsd:integer"
+    },
+    "AutomationVersion": "tale:AutomationVersion",
+    "deployed": {
+      "@id": "tale:deployed",
+      "@type": "xsd:boolean"
+    },
+    "Trigger": "tale:Trigger",
+    "cron": {
+      "@id": "tale:cron",
+      "@type": "xsd:string"
+    },
+    "timezone": {
+      "@id": "tale:timezone",
+      "@type": "xsd:string"
+    },
+    "event": {
+      "@id": "tale:event",
+      "@type": "xsd:string"
+    },
+    "hasToken": {
+      "@id": "tale:hasToken",
+      "@type": "xsd:boolean"
+    },
+    "enabled": {
+      "@id": "tale:enabled",
+      "@type": "xsd:boolean"
+    },
+    "lastRunId": {
+      "@id": "tale:lastRunId",
+      "@type": "xsd:string"
+    },
+    "lastFiredAt": {
+      "@id": "tale:lastFiredAt",
+      "@type": "xsd:integer"
+    },
+    "lastSkippedAt": {
+      "@id": "tale:lastSkippedAt",
+      "@type": "xsd:integer"
+    },
+    "lastSkipReason": {
+      "@id": "tale:lastSkipReason",
+      "@type": "xsd:string"
+    },
+    "consecutiveFailures": {
+      "@id": "tale:consecutiveFailures",
+      "@type": "xsd:integer"
+    },
+    "lastFailedAt": {
+      "@id": "tale:lastFailedAt",
+      "@type": "xsd:integer"
+    },
+    "lastFailureCode": {
+      "@id": "tale:lastFailureCode",
+      "@type": "xsd:string"
+    },
+    "lastFailedRunId": {
+      "@id": "tale:lastFailedRunId",
+      "@type": "xsd:string"
+    },
+    "LegacyRunQuarantine": "tale:LegacyRunQuarantine",
+    "observedAt": {
+      "@id": "tale:observedAt",
+      "@type": "xsd:integer"
+    },
+    "claimEpoch": {
+      "@id": "tale:claimEpoch",
+      "@type": "xsd:integer"
+    },
+    "priorStatus": {
+      "@id": "tale:priorStatus",
+      "@type": "xsd:string"
+    },
+    "resolution": {
+      "@id": "tale:resolution"
+    },
+    "LegacyRunStopRequest": "tale:LegacyRunStopRequest",
+    "action": {
+      "@id": "tale:action",
+      "@type": "xsd:string"
+    },
+    "expectedClaimEpoch": {
+      "@id": "tale:expectedClaimEpoch",
+      "@type": "xsd:integer"
+    },
+    "expectedObservedAt": {
+      "@id": "tale:expectedObservedAt",
+      "@type": "xsd:integer"
+    },
+    "acknowledgeUnknownExternalEffects": {
+      "@id": "tale:acknowledgeUnknownExternalEffects",
+      "@type": "xsd:boolean"
+    },
+    "RunSummary": "tale:RunSummary",
+    "mode": {
+      "@id": "tale:mode",
+      "@type": "xsd:string"
+    },
+    "startedBy": {
+      "@id": "tale:startedBy",
+      "@type": "xsd:string"
+    },
+    "startedVia": {
+      "@id": "tale:startedVia",
+      "@type": "xsd:string"
+    },
+    "detail": {
+      "@id": "tale:detail",
+      "@type": "xsd:string"
+    },
+    "failureCode": {
+      "@id": "tale:failureCode",
+      "@type": "xsd:string"
+    },
+    "waitingFor": {
+      "@id": "tale:waitingFor",
+      "@type": "xsd:string"
+    },
+    "legacyQuarantine": {
+      "@id": "tale:legacyQuarantine",
+      "@type": "@id"
+    },
+    "resumeCount": {
+      "@id": "tale:resumeCount",
+      "@type": "xsd:integer"
+    },
+    "lastResume": {
+      "@id": "tale:lastResume"
+    },
+    "stalled": {
+      "@id": "tale:stalled",
+      "@type": "xsd:boolean"
+    },
+    "startedAt": {
+      "@id": "tale:startedAt",
+      "@type": "xsd:integer"
+    },
+    "finishedAt": {
+      "@id": "tale:finishedAt",
+      "@type": "xsd:integer"
+    },
+    "input": {
+      "@id": "tale:input"
+    },
+    "output": {
+      "@id": "tale:output"
+    },
+    "trace": {
+      "@id": "tale:trace"
+    },
+    "effects": {
+      "@id": "tale:effects"
+    },
+    "checkpoints": {
+      "@id": "tale:checkpoints"
+    },
+    "Run": "tale:Run",
+    "chainSeq": {
+      "@id": "tale:chainSeq",
+      "@type": "xsd:integer"
+    },
+    "RunProjection": "tale:RunProjection",
+    "KnowledgeHit": "tale:KnowledgeHit",
+    "corpus": {
+      "@id": "tale:corpus",
+      "@type": "xsd:string"
+    },
+    "text": {
+      "@id": "tale:text",
+      "@type": "xsd:string"
+    },
+    "fusedScore": {
+      "@id": "tale:fusedScore",
+      "@type": "xsd:decimal"
+    },
+    "legs": {
+      "@id": "tale:legs",
+      "@type": "xsd:integer"
+    },
+    "matchedLegs": {
+      "@id": "tale:matchedLegs",
+      "@container": "@list"
+    },
+    "similarity": {
+      "@id": "tale:similarity",
+      "@type": "xsd:decimal"
+    },
+    "keywordScore": {
+      "@id": "tale:keywordScore",
+      "@type": "xsd:decimal"
+    },
+    "rerankScore": {
+      "@id": "tale:rerankScore",
+      "@type": "xsd:decimal"
+    },
+    "KnowledgeSearchResult": "tale:KnowledgeSearchResult",
+    "hits": {
+      "@id": "tale:hits",
+      "@container": "@list"
+    },
+    "diagnostics": {
+      "@id": "tale:diagnostics"
+    },
+    "Thread": "tale:Thread",
+    "harness": {
+      "@id": "tale:harness",
+      "@type": "xsd:string"
+    },
+    "archived": {
+      "@id": "tale:archived",
+      "@type": "xsd:boolean"
+    },
+    "isShared": {
+      "@id": "tale:isShared",
+      "@type": "xsd:boolean"
+    },
+    "generating": {
+      "@id": "tale:generating",
+      "@type": "xsd:boolean"
+    },
+    "ChatModel": "tale:ChatModel",
+    "providerSlug": {
+      "@id": "tale:providerSlug",
+      "@type": "xsd:string"
+    },
+    "providerLabel": {
+      "@id": "tale:providerLabel",
+      "@type": "xsd:string"
+    },
+    "contextWindow": {
+      "@id": "tale:contextWindow",
+      "@type": "xsd:integer"
+    },
+    "maxOutputTokens": {
+      "@id": "tale:maxOutputTokens",
+      "@type": "xsd:integer"
+    },
+    "pricing": {
+      "@id": "tale:pricing"
+    },
+    "default": {
+      "@id": "tale:default",
+      "@type": "xsd:boolean"
+    },
+    "TextPart": "tale:TextPart",
+    "ReasoningPart": "tale:ReasoningPart",
+    "AttachmentPart": "tale:AttachmentPart",
+    "mediaType": {
+      "@id": "tale:mediaType",
+      "@type": "xsd:string"
+    },
+    "sizeBytes": {
+      "@id": "tale:sizeBytes",
+      "@type": "xsd:integer"
+    },
+    "ToolCallPart": "tale:ToolCallPart",
+    "callId": {
+      "@id": "tale:callId",
+      "@type": "xsd:string"
+    },
+    "capabilityId": {
+      "@id": "tale:capabilityId",
+      "@type": "xsd:string"
+    },
+    "ToolResultPart": "tale:ToolResultPart",
+    "structured": {
+      "@id": "tale:structured",
+      "@type": "xsd:boolean"
+    },
+    "ApprovalPart": "tale:ApprovalPart",
+    "decision": {
+      "@id": "tale:decision",
+      "@type": "xsd:string"
+    },
+    "Message": "tale:Message",
+    "role": {
+      "@id": "tale:role",
+      "@type": "xsd:string"
+    },
+    "parts": {
+      "@id": "tale:parts",
+      "@container": "@list"
+    },
+    "sequence": {
+      "@id": "tale:sequence",
+      "@type": "xsd:integer"
+    },
+    "finishReason": {
+      "@id": "tale:finishReason",
+      "@type": "xsd:string"
+    },
+    "model": {
+      "@id": "tale:model",
+      "@type": "xsd:string"
+    },
+    "blockedReason": {
+      "@id": "tale:blockedReason",
+      "@type": "xsd:string"
+    },
+    "errorCode": {
+      "@id": "tale:errorCode",
+      "@type": "xsd:string"
+    },
+    "usage": {
+      "@id": "tale:usage"
+    },
+    "ProjectAgentInput": "tale:ProjectAgentInput",
+    "modelProvider": {
+      "@id": "tale:modelProvider",
+      "@type": "xsd:string"
+    },
+    "skills": {
+      "@id": "tale:skills",
+      "@container": "@list"
+    },
+    "connectors": {
+      "@id": "tale:connectors",
+      "@container": "@list"
+    },
+    "tools": {
+      "@id": "tale:tools",
+      "@container": "@list"
+    },
+    "secrets": {
+      "@id": "tale:secrets",
+      "@container": "@list"
+    },
+    "instructions": {
+      "@id": "tale:instructions",
+      "@type": "xsd:string"
+    },
+    "ProjectAgentUpdate": "tale:ProjectAgentUpdate",
+    "ProjectAgent": "tale:ProjectAgent",
+    "handle": {
+      "@id": "tale:handle",
+      "@type": "xsd:string"
+    },
+    "managed": {
+      "@id": "tale:managed",
+      "@type": "xsd:boolean"
+    },
+    "SkillSummary": "tale:SkillSummary",
+    "slug": {
+      "@id": "tale:slug",
+      "@type": "xsd:string"
+    },
+    "visibility": {
+      "@id": "tale:visibility",
+      "@type": "xsd:string"
+    },
+    "teams": {
+      "@id": "tale:teams",
+      "@container": "@list"
+    },
+    "owner": {
+      "@id": "tale:owner",
+      "@type": "xsd:string"
+    },
+    "origin": {
+      "@id": "tale:origin",
+      "@type": "xsd:string"
+    },
+    "ownerName": {
+      "@id": "tale:ownerName",
+      "@type": "xsd:string"
+    },
+    "updatedBy": {
+      "@id": "tale:updatedBy",
+      "@type": "xsd:string"
+    },
+    "updatedByName": {
+      "@id": "tale:updatedByName",
+      "@type": "xsd:string"
+    },
+    "icon": {
+      "@id": "tale:icon",
+      "@type": "xsd:string"
+    },
+    "disableModelInvocation": {
+      "@id": "tale:disableModelInvocation",
+      "@type": "xsd:boolean"
+    },
+    "canEdit": {
+      "@id": "tale:canEdit",
+      "@type": "xsd:boolean"
+    },
+    "etag": {
+      "@id": "tale:etag",
+      "@type": "xsd:string"
+    },
+    "Skill": "tale:Skill",
+    "body": {
+      "@id": "tale:body",
+      "@type": "xsd:string"
+    },
+    "files": {
+      "@id": "tale:files",
+      "@container": "@list"
+    },
+    "KnowledgeEntry": "tale:KnowledgeEntry",
+    "topic": {
+      "@id": "tale:topic",
+      "@type": "xsd:string"
+    },
+    "documentId": {
+      "@id": "tale:documentId",
+      "@type": "xsd:string"
+    },
+    "supersededBy": {
+      "@id": "tale:supersededBy",
+      "@type": "xsd:string"
+    },
+    "supersededAt": {
+      "@id": "tale:supersededAt",
+      "@type": "xsd:integer"
+    },
+    "KnowledgeEntryCreated": "tale:KnowledgeEntryCreated"
+  },
+  "@type": "schema:Dataset",
+  "schema:name": "Tale API JSON-LD context",
+  "schema:description": "A JSON-LD @context for the objects Tale's own API contract declares: one class per component schema, one property per declared field, typed from the contract. Derived by script (derive-json-ld.py, 2026-10-09) from openapi/tale-dev-openapi.yml.",
+  "dcterms:created": "2026-10-09",
+  "dcterms:source": [
+    "openapi/tale-dev-openapi.yml"
+  ]
+}

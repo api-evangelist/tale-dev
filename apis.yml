@@ -1,30 +1,543 @@
 aid: tale-dev
-name: Tale Platform API
-description: 'Tale Platform API is a company surfaced via the API Evangelist harvest backlog (source:
-  new-submission) and added to the network as a stub for full-pipeline profiling.'
+name: Tale
+image: https://tale.dev/og.png
+description: Tale is an open-source (MIT) AI platform from Ruler GmbH (Spiez, Switzerland) for knowledge, chat, agents, skills and automations, self-hosted or run as Tale Enterprise in CH/EU clouds. Each deployment exposes the Tale Platform API (REST under /api/v1 with Bearer organization API keys), an MCP endpoint at /api/v1/mcp with 22 documented tools, webhook triggers and OpenAI/Anthropic-compatible model endpoints.
 url: https://raw.githubusercontent.com/api-evangelist/tale-dev/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:new-submission
-x-tier: stub
-x-tier-reason: harvest
+x-tier: profiled
+x-tier-reason: enrichment pass 2026-10-09 (local-v5; was harvest)
 specificationVersion: '0.20'
 created: '2026-10-09'
 modified: '2026-10-09'
 tags:
 - Company
-apis: []
+- AI
+- Agents
+- Automation
+- Knowledge Management
+- MCP
+- Open Source
+- Self-Hosted
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: AgentSkill
+  url: skills/_index.yml
+- type: AgenticAccess
+  url: agentic-access/tale-dev-agentic-access.yml
+- type: RateLimits
+  url: rate-limits/tale-dev-rate-limits.yml
+- type: Plans
+  url: plans/tale-dev-plans-pricing.yml
+- type: Spectral
+  url: rules/tale-dev-rules.yml
+- type: JSONLD
+  url: json-ld/tale-dev-context.jsonld
+- type: Vocabulary
+  url: vocabulary/tale-dev-vocabulary.yml
+- type: DataModel
+  url: data-model/tale-dev-data-model.yml
+- type: Idempotency
+  url: conventions/tale-dev-conventions.yml
+- type: Conventions
+  url: conventions/tale-dev-conventions.yml
+- type: ErrorCatalog
+  url: errors/tale-dev-problem-types.yml
+- type: Conformance
+  url: conformance/tale-dev-conformance.yml
+- type: LLMsTxt
+  url: llms/tale-dev-llms.txt
+- type: ToolCrosswalk
+  url: mcp/tale-dev-tool-crosswalk.yml
+- type: MCPServer
+  url: mcp/tale-dev-mcp.yml
+- type: Hosts
+  url: hosts/tale-dev-hosts.yml
+- type: Vendors
+  url: vendors/tale-dev-vendors.yml
+- type: Authentication
+  url: authentication/tale-dev-authentication.yml
+- type: DomainSecurity
+  url: security/tale-dev-domain-security.yml
 - type: Website
   url: https://tale.dev
 - type: Documentation
+  url: https://docs.tale.dev
+- type: APIReference
   url: https://docs.tale.dev/develop/api-reference
-x-submission-notes: OpenAPI https://raw.githubusercontent.com/tale-project/tale/main/services/platform/public/openapi.json
-  (3.0.3, 94 paths); self-hosted per instance, server is a placeholder; MIT (tale-project/tale); Ruler
-  GmbH, Spiez CH; submitted via GitHub api-search/inbox#44 by a disclosed Codex assistant
+- type: GettingStarted
+  url: https://docs.tale.dev/get-started/quickstart
+- type: ChangeLog
+  url: https://tale.dev/changelog
+- type: Pricing
+  url: https://tale.dev/pricing
+- type: PrivacyPolicy
+  url: https://tale.dev/legal/privacy-policy
+- type: TermsOfService
+  url: https://tale.dev/legal/terms-of-service
+- type: GitHubOrganization
+  url: https://github.com/tale-project
+- type: Webhooks
+  url: https://docs.tale.dev/develop/webhooks
+apis:
+- aid: tale-dev:tale-dev-agents-api
+  name: Tale Agents API
+  description: Agents belonging to one project.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Agents
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-agents-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-automations-api
+  name: Tale Automations API
+  description: >-
+    Versioned automations, their runs and triggers — list, read, install, bind, run, cancel and delete.
+    Authoring (save, validate, test, deploy) is not on this surface: it lives on `POST /api/v1/mcp` (`save_automation`,
+    `validate_automation`, `test_automation`, `deploy_automation`, `set_trigger` — the MCP endpoint page
+    of the developer docs), in the app’s automation editor, and in `tale deploy` for configuration packs.
+    A deleted automation comes back by saving and deploying it again there.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Automations
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-automations-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-browser-sessions-api
+  name: Tale Browser sessions API
+  description: The warmed browser-session pool behind video-link ingestion.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Browser sessions
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-browser-sessions-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-contacts-api
+  name: Tale Contacts API
+  description: Contact records.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Contacts
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-contacts-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-conversations-api
+  name: Tale Conversations API
+  description: >-
+    Mirroring external conversations into Inbox — versioned snapshots, reply claims, delivery receipts
+    and staged uploads.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Conversations
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-conversations-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-documents-api
+  name: Tale Documents API
+  description: Documents in the knowledge base.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Documents
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-documents-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-knowledge-api
+  name: Tale Knowledge API
+  description: Knowledge entries and semantic search.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Knowledge
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-knowledge-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-mcp-api
+  name: Tale MCP API
+  description: The platform MCP endpoint (JSON-RPC over HTTP).
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - MCP
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-mcp-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-model-endpoints-api
+  name: Tale Model endpoints API
+  description: >-
+    The organization’s approved models over two vendor wires — OpenAI Chat Completions under `/api/v1/openai`
+    and Anthropic Messages under `/api/v1/anthropic` — for the OpenAI and Anthropic SDKs, opencode and
+    Claude Code. Off until an administrator turns them on; governed and metered like chat. Bodies, answers
+    and refusals are the vendors’ own shapes (see “Compatible model endpoints” above).
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Model endpoints
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-model-endpoints-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-notifications-api
+  name: Tale Notifications API
+  description: Read-only, recipient-scoped notification exports for connected applications.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Notifications
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-notifications-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-organization-api
+  name: Tale Organization API
+  description: >-
+    The key holder and the organizations it may act in — where a multi-organization client learns the
+    slug to send.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Organization
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-organization-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-products-api
+  name: Tale Products API
+  description: Product catalog entries.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Products
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-products-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-projects-api
+  name: Tale Projects API
+  description: >-
+    Projects, their folders, and their files — the machine door for external systems that mirror client
+    work into the platform. Multi-org keys must send X-Organization-Slug on every call.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Projects
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-projects-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-runs-api
+  name: Tale Runs API
+  description: Durable automation runs.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Runs
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-runs-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-skills-api
+  name: Tale Skills API
+  description: The organization’s skills.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Skills
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-skills-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-tasks-api
+  name: Tale Tasks API
+  description: >-
+    Tasks on the project boards — the machine door for external workers that materialize items as tasks,
+    start their workflows, and report back. Multi-org keys must send X-Organization-Slug on every call.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Tasks
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-tasks-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-threads-api
+  name: Tale Threads API
+  description: Chat threads of the key holder.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Threads
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-threads-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+- aid: tale-dev:tale-dev-websites-api
+  name: Tale Websites API
+  description: Crawled website sources.
+  humanURL: https://docs.tale.dev/develop/api-reference
+  baseURL: https://your-host.example.com/api/v1
+  tags:
+  - Websites
+  properties:
+  - type: OpenAPI
+    url: openapi/tale-dev-websites-api-openapi.yml
+  - type: Documentation
+    url: https://docs.tale.dev/develop/api-reference
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-projection-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-me-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-run-summary-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-document-schema.json
+  - type: JSONSchema
+    url: json-schema/tale-dev-message-schema.json
+x-submission-notes: OpenAPI https://raw.githubusercontent.com/tale-project/tale/main/services/platform/public/openapi.json (3.0.3, 94 paths); self-hosted per instance, server is a placeholder; MIT (tale-project/tale); Ruler GmbH, Spiez CH; submitted via GitHub api-search/inbox#44 by a disclosed Codex assistant
 x-submission-probe: root/docs/llms.txt/openapi 200; invented path 404
 x-submitted-by: promotion@tale.dev (github api-search/inbox#44, 2026-10-09)
+x-enrichment:
+  date: '2026-10-09'
+  status: enriched
+  artifacts_added: 12
+  pass: local-v5

@@ -1,0 +1,4 @@
+generated: '2026-10-09'
+method: generated
+skills:
+- {name: tale-run-automation, file: skills/tale-dev-run-automation.md}

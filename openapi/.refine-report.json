@@ -1,0 +1,57 @@
+{
+  "provider": "tale-dev",
+  "sources": [
+    "_original/tale-dev-openapi-original.json",
+    "tale-dev-openapi.yml"
+  ],
+  "outputs": [
+    "tale-dev-agents-api-openapi.yml",
+    "tale-dev-automations-api-openapi.yml",
+    "tale-dev-browser-sessions-api-openapi.yml",
+    "tale-dev-contacts-api-openapi.yml",
+    "tale-dev-conversations-api-openapi.yml",
+    "tale-dev-documents-api-openapi.yml",
+    "tale-dev-knowledge-api-openapi.yml",
+    "tale-dev-mcp-api-openapi.yml",
+    "tale-dev-model-endpoints-api-openapi.yml",
+    "tale-dev-notifications-api-openapi.yml",
+    "tale-dev-organization-api-openapi.yml",
+    "tale-dev-products-api-openapi.yml",
+    "tale-dev-projects-api-openapi.yml",
+    "tale-dev-runs-api-openapi.yml",
+    "tale-dev-skills-api-openapi.yml",
+    "tale-dev-tasks-api-openapi.yml",
+    "tale-dev-threads-api-openapi.yml",
+    "tale-dev-websites-api-openapi.yml"
+  ],
+  "archived": [
+    "archived openapi/tale-dev-openapi.yml"
+  ],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "tale-dev-openapi-original.json: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
+    "tale-dev-openapi.yml: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
+    "tag 'Agents' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Automations' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Browser sessions' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Contacts' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Conversations' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Documents' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Knowledge' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'MCP' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Model endpoints' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Notifications' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Organization' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Products' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Projects' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Runs' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Skills' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Tasks' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Threads' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "tag 'Websites' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
+    "apis.yml register: written (+18 apis, 18 total)"
+  ],
+  "skipped": []
+}

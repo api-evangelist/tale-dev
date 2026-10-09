@@ -1,0 +1,459 @@
+generated: '2026-10-09'
+method: derived
+generator: derive-vocabulary.py
+source: openapi/tale-dev-openapi.yml
+vocabulary:
+  name: Tale Domain Vocabulary
+  description: 'Terms declared by Tale''s own API contract: its resource groups, objects and enumerations, with the contract''s definitions. Derived,
+    not authored.'
+  version: '2026-10-09'
+  terms:
+  - term: Organization
+    definition: The key holder and the organizations it may act in — where a multi-organization client learns the slug to send.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Documents
+    definition: Documents in the knowledge base.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Websites
+    definition: Crawled website sources.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Browser sessions
+    definition: The warmed browser-session pool behind video-link ingestion.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Products
+    definition: Product catalog entries.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Contacts
+    definition: Contact records.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Projects
+    definition: Projects, their folders, and their files — the machine door for external systems that mirror client work into the platform. Multi-org
+      keys must send X-Organization-Slug on every call.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Tasks
+    definition: Tasks on the project boards — the machine door for external workers that materialize items as tasks, start their workflows, and
+      report back. Multi-org keys must send X-Organization-Slug on every call.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Automations
+    definition: 'Versioned automations, their runs and triggers — list, read, install, bind, run, cancel and delete. Authoring (save, validate,
+      test, deploy) is not on this surface: it lives on `POST /api/v1/mcp` (`save_automation`, `validate_automation`, `test_automation`, `deploy_automation`,
+      `set_trigger` — the MCP endpoint page of the developer docs), in the app’s automation editor, and in `tale deploy` for co'
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Runs
+    definition: Durable automation runs.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Threads
+    definition: Chat threads of the key holder.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Agents
+    definition: Agents belonging to one project.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Skills
+    definition: The organization’s skills.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Knowledge
+    definition: Knowledge entries and semantic search.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: MCP
+    definition: The platform MCP endpoint (JSON-RPC over HTTP).
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Model endpoints
+    definition: The organization’s approved models over two vendor wires — OpenAI Chat Completions under `/api/v1/openai` and Anthropic Messages
+      under `/api/v1/anthropic` — for the OpenAI and Anthropic SDKs, opencode and Claude Code. Off until an administrator turns them on; governed
+      and metered like chat. Bodies, answers and refusals are the vendors’ own shapes (see “Compatible model endpoints” above).
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Conversations
+    definition: Mirroring external conversations into Inbox — versioned snapshots, reply claims, delivery receipts and staged uploads.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: Notifications
+    definition: Read-only, recipient-scoped notification exports for connected applications.
+    tags:
+    - Resource Group
+    source: openapi/tale-dev-openapi.yml
+  - term: OpenAiError
+    definition: A refusal on the OpenAI-compatible model endpoints, in OpenAI’s own error shape — the REST door’s refusals (a missing key, the
+      organization header, the request budget) included. `code` is this API’s stable refusal code.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/OpenAiError
+  - term: AnthropicError
+    definition: A refusal on the Anthropic-compatible model endpoint, in Anthropic’s own error shape — the REST door’s refusals included. `error.code`
+      is this API’s stable refusal code, an addition to Anthropic’s shape.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/AnthropicError
+  - term: Error
+    definition: 'Object declared by the contract with fields: error, code, requestId, data.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Error
+  - term: RetryIndexingResult
+    definition: What a retry-indexing request did — the one answer the Hub document door and the project-file door share.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/RetryIndexingResult
+  - term: Document
+    definition: 'Object declared by the contract with fields: id, title, content, fileId, mimeType, extension, sourceProvider, teamIds, teamId,
+      folderId, metadata, contentHash. (4 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Document
+  - term: DocumentInput
+    definition: 'Object declared by the contract with fields: title, content, fileId, mimeType, extension, sourceProvider, metadata, teamIds,
+      teamId, folderId.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/DocumentInput
+  - term: DocumentPatch
+    definition: Every field optional; null clears a nullable field. Applies only to Knowledge Hub documents. A patch that changes nothing writes
+      nothing and leaves `updatedAt` alone.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/DocumentPatch
+  - term: Website
+    definition: 'Object declared by the contract with fields: id, organizationId, domain, kind, title, description, scanInterval, lastScannedAt,
+      status, pageCount, crawledPageCount, failedPageCount. (3 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Website
+  - term: WebsiteInput
+    definition: 'Object declared by the contract with fields: domain, title, description, scanInterval, urls.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsiteInput
+  - term: WebsitePatch
+    definition: 'The domain is immutable after create (the crawl registration is keyed by it): a body carrying a `domain` other than the stored
+      one is refused with 400 `WEBSITE_DOMAIN_IMMUTABLE` — delete the website and re-add it under the new domain. The stored value itself may
+      be echoed, as a client that sends the resource it read does.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsitePatch
+  - term: WebsitePage
+    definition: 'Object declared by the contract with fields: url, title, wordCount, status, contentHash, lastCrawledAt, discoveredAt, chunksCount,
+      indexed, failCount, lastError, lastErrorKind. (1 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsitePage
+  - term: WebsitePageList
+    definition: 'Object declared by the contract with fields: pages, total, offset, hasMore, isDone, continueCursor.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsitePageList
+  - term: WebsiteSearchHit
+    definition: 'Object declared by the contract with fields: url, title, content, chunkIndex, score.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsiteSearchHit
+  - term: WebsiteSearchResults
+    definition: 'Object declared by the contract with fields: results, total.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/WebsiteSearchResults
+  - term: ConversationMirror
+    definition: 'Object declared by the contract with fields: conversationId, externalId, externalContactId, contactId, contactStatus, version,
+      sourceDeleted, status, subject, createdAt.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ConversationMirror
+  - term: ConversationDelivery
+    definition: One native Inbox reply in a source’s delivery queue, as the listing shows it — never the claim token or the body
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ConversationDelivery
+  - term: BrowserSession
+    definition: 'Object declared by the contract with fields: id, domain, label, createdAt, status, expiresAt, lastUsedAt, failureCount.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/BrowserSession
+  - term: BrowserSessionImport
+    definition: 'Object declared by the contract with fields: domain, cookiesJar, userAgent, visitorData, poToken, label, ttlMs.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/BrowserSessionImport
+  - term: Product
+    definition: 'Object declared by the contract with fields: id, organizationId, name, description, imageUrl, stock, price, currency, category,
+      tags, status, translations. (4 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Product
+  - term: ProductInput
+    definition: '`name` is required on create; every field is optional on update. Strings are trimmed, and a blank optional field — or one sent
+      as `null` — reads as left out. Unknown keys are refused (`INVALID_BODY`).'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProductInput
+  - term: ProductPatch
+    definition: 'Every field optional. `null` clears any optional field, and a blank string reads as `null` (a blank `name` is refused); `metadata`
+      merges per RFC 7396. Send `expectedUpdatedAt` from the last product read to update only that revision: a stale one answers 409 `PRODUCT_STALE`
+      without changing any field, and a patch that changes nothing — an empty body, or every field already at its value — writes not'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProductPatch
+  - term: Team
+    definition: 'One team of the organization: the `id` an audience names, the `name` the app shows for it, and whether the key holder is a member.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Team
+  - term: Me
+    definition: 'Object declared by the contract with fields: key, user, organization, organizations, capabilities.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Me
+  - term: Contact
+    definition: 'Object declared by the contract with fields: id, organizationId, name, email, phone, externalId, source, locale, address, tags,
+      metadata, notes. (3 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Contact
+  - term: ContactInput
+    definition: Unknown keys are refused (`INVALID_BODY`). Strings are trimmed, and a blank optional field — or one sent as `null` — reads as
+      left out (a CSV-shaped row or a JSON export imports cleanly); the same body clears the field on a PATCH. A create needs at least one of
+      `name`, `email` or `externalId` to file the contact under.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ContactInput
+  - term: ContactPatch
+    definition: 'Every field optional. `null` clears any optional field, and a blank string reads as `null`; `metadata` merges per RFC 7396 while
+      `address` is replaced whole. A patch may not clear the last of `name`, `email` and `externalId` (400 `CONTACT_IDENTITY_REQUIRED`). Send
+      `expectedUpdatedAt` from the last contact read to update only that revision: a stale one answers 409 `CONTACT_STALE` without changing a'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ContactPatch
+  - term: BulkCreateResult
+    definition: A body the schema refuses fails the whole call with 400; a row the directory refuses (a duplicate email or external id) fails
+      that row alone and is listed under `errors` with its code. `created` here is the list of rows that landed — unlike the boolean `created`
+      a folder or task result carries.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/BulkCreateResult
+  - term: Project
+    definition: 'Object declared by the contract with fields: id, name, key, description, externalItemId, archivedAt, createdAt, updatedAt, teamIds.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Project
+  - term: ProjectFolder
+    definition: 'Object declared by the contract with fields: id, name, parentId.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProjectFolder
+  - term: ProjectFolderResult
+    definition: 'Object declared by the contract with fields: folder, created.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProjectFolderResult
+  - term: ProjectUploadHandoff
+    definition: 'Object declared by the contract with fields: maxBytes, uploadId, url, method, s3Ref, expiresAt.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProjectUploadHandoff
+  - term: ProjectFile
+    definition: 'Object declared by the contract with fields: id, fileName, folderId, mimeType, size, indexing, createdAt.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ProjectFile
+  - term: Task
+    definition: 'Object declared by the contract with fields: id, title, status, projectId, externalSystem, externalId, externalUrl, description,
+      descriptionText, labels, archivedAt, startDate. (5 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Task
+  - term: TaskRepeat
+    definition: 'How a task repeats: which calendar days, never a time of day, read in `timezone` — the IANA zone of the person who set the rule.
+      `daily` steps days; `weekly` names `weekdays` (0 is Sunday … 6 is Saturday; weeks run Monday to Sunday); `monthly` a `monthDay` (a shorter
+      month uses its last day); `yearly` a `month` (1 is January) and a `monthDay` (29 February falls on the 28th in a common year); `inte'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/TaskRepeat
+  - term: Actor
+    definition: 'The verified member a machine caller acts FOR when it relays a person’s own gesture — named by e-mail, never by an id the caller
+      made up. The door resolves the address against the organization’s members with the notification export’s rule: exactly one active, verified
+      membership. Naming an actor at all needs `capabilities.actAs` from `/me`.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Actor
+  - term: QuestionSet
+    definition: 'A structured question set an agent may ask instead of a plain sentence: up to four questions, each a choice among two to four
+      labelled options; the person may also answer a question in their own words. Render each `question` with its `options`; the answer travels
+      back as one string per question (see the answer door).'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/QuestionSet
+  - term: PendingAsk
+    definition: 'The question a run is parked on (`waitingFor: "ask"`): what the agent asked, on which node, and until when an answer still resumes
+      the run. Answer at `POST …/runs/{runId}/asks/{askId}`.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/PendingAsk
+  - term: ExternalStatusWorkflow
+    definition: 'Object declared by the contract with fields: actions.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ExternalStatusWorkflow
+  - term: ExternalStatusDecision
+    definition: 'Object declared by the contract with fields: accepted, reason.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ExternalStatusDecision
+  - term: TaskStatusSnapshot
+    definition: 'Object declared by the contract with fields: task, revision, statusChangedAt, change, externalStatus, workflow, request.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/TaskStatusSnapshot
+  - term: TaskReview
+    definition: A task’s ordinary pending review, owned by the captured person or agent. Native agent verdicts use task_review; the public review
+      POST relays a person’s decision.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/TaskReview
+  - term: TaskUpsertResult
+    definition: 'Object declared by the contract with fields: task, runId, executionId.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/TaskUpsertResult
+  - term: AutomationSummary
+    definition: 'Object declared by the contract with fields: name, latestVersion, deployedVersion, description, inputs, presentation, trigger,
+      projectIds.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/AutomationSummary
+  - term: Automation
+    definition: 'Object declared by the contract with fields: name, version, document, message, testsPassed, testsCheckedAt, deployedVersion,
+      projectIds, createdBy, createdAt.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Automation
+  - term: AutomationVersion
+    definition: 'Object declared by the contract with fields: version, message, testsPassed, testsCheckedAt, createdBy, createdAt, deployed.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/AutomationVersion
+  - term: Trigger
+    definition: 'The binding, and its health: `lastFiredAt` and `lastRunId` name the last run it started, `lastSkippedAt` and `lastSkipReason`
+      the last time it came due and started nothing. A binding is alive when `lastFiredAt` keeps pace with its cadence; one whose `lastSkippedAt`
+      is the newer stamp is coming due and not running — the reason says what to fix. `consecutiveFailures` counts the runs it started that '
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Trigger
+  - term: LegacyRunQuarantine
+    definition: A legacy execution whose external effects or termination cannot be proven. Present on held runs. A recorded stop request does
+      not resolve the hold or establish that work stopped.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/LegacyRunQuarantine
+  - term: LegacyRunStopRequest
+    definition: 'Object declared by the contract with fields: action, expectedClaimEpoch, expectedObservedAt, acknowledgeUnknownExternalEffects.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/LegacyRunStopRequest
+  - term: RunSummary
+    definition: One run as a listing reports it — identity, scope, status and timing. The input, output, trace, effects and checkpoints of the
+      full `Run` are inlined only when `include` names them; the single read answers the full row.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/RunSummary
+  - term: Run
+    definition: 'A run in full — the single read: identity, status, input, output, trace, effects, and per-node checkpoints. Listings answer `RunSummary`
+      rows.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Run
+  - term: RunProjection
+    definition: 'A run read with `?fields=`: exactly the keys of `Run` the query named, no others — none is required, since the caller chose them.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/RunProjection
+  - term: KnowledgeHit
+    definition: 'Object declared by the contract with fields: id, corpus, text, source, chunkIndex, offset, score, fusedScore, legs, matchedLegs,
+      similarity, keywordScore. (1 more)'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/KnowledgeHit
+  - term: KnowledgeSearchResult
+    definition: 'Object declared by the contract with fields: hits, diagnostics.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/KnowledgeSearchResult
+  - term: Thread
+    definition: 'Object declared by the contract with fields: id, title, kind, harness, projectId, archived, archivedAt, isShared, generating,
+      createdAt, updatedAt.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/Thread
+  - term: ChatModel
+    definition: 'Object declared by the contract with fields: id, label, providerSlug, providerLabel, contextWindow, maxOutputTokens, capabilities,
+      pricing, tags, default.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ChatModel
+  - term: TextPart
+    definition: 'Object declared by the contract with fields: type, text.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/TextPart
+  - term: ReasoningPart
+    definition: The model’s reasoning ahead of its reply — display-only, never replayed to the model; it may quote the assistant’s own instructions
+      verbatim, so it is not safe to render as the answer.
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ReasoningPart
+  - term: AttachmentPart
+    definition: 'Object declared by the contract with fields: type, name, mediaType, fileId, sizeBytes, url, text.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/AttachmentPart
+  - term: ToolCallPart
+    definition: 'Object declared by the contract with fields: type, callId, capabilityId, input.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ToolCallPart
+  - term: ToolResultPart
+    definition: 'Object declared by the contract with fields: type, callId, capabilityId, output, structured.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ToolResultPart
+  - term: ApprovalPart
+    definition: 'Object declared by the contract with fields: type, approvalId, question, decision.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/ApprovalPart
+  - term: MessagePart
+    definition: 'One ordered piece of a message, discriminated by `type`: the `mapping` names the schema each kind validates against (`TextPart`
+      … `ApprovalPart`), so a discriminator-honouring validator resolves every part. The kinds listed are the vocabulary as of this version; the
+      set is additive, so a client renders a kind it does not know as opaque.'
+    tags:
+    - Object
+    source: openapi/tale-dev-openapi.yml#/components/schemas/MessagePart

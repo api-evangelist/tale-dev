@@ -1,0 +1,14 @@
+generated: '2026-10-09'
+method: derived
+source: openapi/tale-dev-openapi.yml
+summary:
+  types:
+  - http
+schemes:
+- name: bearerAuth
+  type: http
+  scheme: bearer
+  description: An organization API key. Create one in Settings → API. Pasted into the explorer
+    on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
+  sources:
+  - openapi/tale-dev-openapi.yml

@@ -1,0 +1,35 @@
+name: Tale Platform MCP Endpoint
+generated: '2026-10-09'
+method: searched
+source: https://docs.tale.dev/develop/mcp-endpoint
+status: documented
+deployment:
+  mode: remote
+  endpoint: https://your-host.example.com/api/v1/mcp
+  auth: api-key
+  verified: searched
+  note: Self-hosted per deployment; the docs give the endpoint as {origin}/api/v1/mcp on each Tale instance (placeholder host verbatim from docs). Streamable HTTP, Bearer API key, no SSE, no OAuth (OAuth discovery returns JSON 404).
+tools_source: documented tool table at https://docs.tale.dev/develop/mcp-endpoint (docs state "The current inventory has 22 tools"); not observed via a live tools/list
+tools:
+- name: cancel_run
+- name: delete_trigger
+- name: deploy_automation
+- name: get_automation
+- name: get_catalog
+- name: get_docs
+- name: get_knowledge
+- name: get_run
+- name: invoke_capability
+- name: list_automations
+- name: list_runs
+- name: list_triggers
+- name: list_versions
+- name: run_automation
+- name: run_deployed
+- name: save_automation
+- name: search_capabilities
+- name: search_catalog
+- name: set_trigger
+- name: start_run
+- name: test_automation
+- name: validate_automation

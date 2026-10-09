@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/api-evangelist/tale-dev/main/json-schema/tale-dev-run-schema.json",
+  "title": "Run",
+  "description": "A run in full — the single read: identity, status, input, output, trace, effects, and per-node checkpoints. Listings answer `RunSummary` rows.",
+  "x-generated": "2026-10-09",
+  "x-method": "derived",
+  "x-generator": "derive-json-schema.py",
+  "x-source": "openapi/tale-dev-openapi.yml#/components/schemas/Run",
+  "type": "object",
+  "required": [
+    "id",
+    "organizationId",
+    "name",
+    "version",
+    "status",
+    "mode",
+    "startedBy",
+    "startedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The run id (`runId` at start)"
+    },
+    "organizationId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "projectId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "URL project for a project run; null for an organization run"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "waiting",
+        "quarantined",
+        "success",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "mock",
+        "live"
+      ]
+    },
+    "startedBy": {
+      "type": "string",
+      "description": "What started the run — one of four forms: `api-key:<userId>` (a start through this API or the MCP endpoint), `user:<userId>` (a start from the product), `trigger:<triggerId>` (a schedule, webhook or event — the id the trigger read answers), or a bare user id on runs the in-product builder recorded before it prefixed them. Split on the first `:`; treat a value without one as a user id."
+    },
+    "startedVia": {
+      "type": "string",
+      "enum": [
+        "schedule",
+        "webhook",
+        "event"
+      ],
+      "description": "Which kind of trigger started a `trigger:<id>` run — read off the run’s own input (`input.trigger`), so it stays true after the binding changes kind. Absent on a run a person or an API key started."
+    },
+    "input": {},
+    "output": {},
+    "checkpoints": {},
+    "trace": {},
+    "effects": {},
+    "detail": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The failure or wait reason; null while the run has none — and null again once a cancel lands (the park it named is over). While `waiting` it names the park: `approval:<approvalId>`, `agent:<nodeId>`, `room:<nodeId>`, `repeat:<nodeId>` or `in_doubt:<nodeId>` — `waitingFor` is the field to branch on; when `failed`, the failure sentence, and `failureCode` the stable cause to branch on — the sentence is not contractual."
+    },
+    "failureCode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "node_error",
+        "connector_error",
+        "llm_output_invalid",
+        "approval_rejected",
+        "execution_limit",
+        "automation_deleted",
+        "engine_incompatible",
+        "effect_in_doubt",
+        "missing_api_key",
+        "credit_exhausted",
+        "model_not_entitled",
+        "auth_error",
+        "model_not_found",
+        "unsupported_parameter",
+        "output_cap_too_high",
+        "token_limit",
+        "rate_limited",
+        "content_filter",
+        "context_length",
+        "provider_unreachable",
+        "provider_error",
+        "budget_exceeded",
+        "harness_error",
+        "turn_crashed",
+        "session_gone",
+        "start_failed",
+        "harvest_failed",
+        "resume_failed",
+        "deadline",
+        "ask_expired",
+        null
+      ],
+      "description": "Why a `failed` run failed — present only with `status: \"failed\"`, null otherwise (and null on a failure recorded before this field existed). `node_error` — the node’s own code, template, `forEach` or `output` expression failed, an authoring refusal: the author’s problem; `connector_error` — a connector action refused or failed; `llm_output_invalid` — the model’s reply did not satisfy the node’s `outputSchema`; `approval_rejected`; `execution_limit` — the 100-execution guard; `automation_deleted` — the automation vanished mid-flight; `engine_incompatible` — the run’s saved progress could not be read by this version of Tale, so it was stopped instead of starting over (no step ran twice); `effect_in_doubt` — a person failed the run at a write that may already have reached its service when the run was interrupted. The provider codes the chat surface documents (`credit_exhausted`, `auth_error`, `rate_limited`, `provider_unreachable`, `provider_error`, `model_not_found`, …) — an `llm` node’s provider: the account or the provider, not the request. The agent codes (`harness_error`, `turn_crashed`, `session_gone`, `deadline`, `ask_expired`, `budget_exceeded`, …) — an `agent` node’s turn, after its in-node retries. `budget_exceeded` — a budget limit refused an `agent` node’s turn or an `llm` node’s call, or the turn used up its allowance. Retry on `provider_error`, `provider_unreachable`, `rate_limited`, `turn_crashed`, `session_gone`, `harvest_failed`; alert a person on the rest."
+    },
+    "waitingFor": {
+      "type": "string",
+      "enum": [
+        "approval",
+        "ask",
+        "in_doubt",
+        "agent",
+        "room",
+        "repeat"
+      ],
+      "description": "Present only while `status` is `waiting`: what the run is parked on. `approval` — a person’s decision on a gate; `ask` — a question a person has to answer; `in_doubt` — a write the run was making when its server stopped may or may not have reached its service, and a person must decide how to continue (in the app: run it again, skip it, or fail the run); `agent` — an agent turn still running, no one to page; `room` — an agent turn whose start waits for sandbox room, no one to page; `repeat` — a node polling until its `repeatUntil` condition holds, no one to page."
+    },
+    "legacyQuarantine": {
+      "$ref": "#/$defs/LegacyRunQuarantine"
+    },
+    "resumeCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How often the run moved to another server: a server that was being updated or restarted handed it on, or another one took it over after its own stopped responding. Steps it had finished never run again. `Run` always carries it; `RunSummary` omits it while it is 0."
+    },
+    "lastResume": {
+      "type": "object",
+      "required": [
+        "reason",
+        "at"
+      ],
+      "additionalProperties": false,
+      "description": "Why and when the run last moved to another server; absent while it never did. `shutdown` — its server was being updated or restarted and handed it on; `lease_expired` — its server stopped responding and another one took it over.",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "shutdown",
+            "lease_expired"
+          ]
+        },
+        "at": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Epoch milliseconds"
+        }
+      }
+    },
+    "stalled": {
+      "type": "boolean",
+      "description": "True while a `running` run waits for a server to take it over after its own stopped (the app reads it as “Interrupted — resuming”): nothing is working on it right now, and another server picks it up within about a minute and a half. `Run` always carries it; `RunSummary` carries it only while true."
+    },
+    "claimEpoch": {
+      "type": "integer",
+      "description": "The stepper’s claim fence: incremented on every claim — each turn, a takeover after a server stopped, or a queue retry; a worker holding an older epoch has its writes refused as stale. Diagnostic — above 1 means the run was claimed more than once."
+    },
+    "chainSeq": {
+      "type": "integer",
+      "description": "The poll-chain fence of a waiting run: incremented each time the run parks, so a wake-up scheduled for an earlier park is ignored. Diagnostic — how many times the run has parked."
+    },
+    "startedAt": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "When the start was accepted — the 202 of a start, a webhook delivery or a trigger occurrence; the run is `queued` from this moment. There is no separate pick-up stamp: `queued` → `running` is the stepper’s first claim, usually within a second, so `finishedAt - startedAt` is wall-clock including any wait for a worker."
+    },
+    "finishedAt": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Epoch milliseconds"
+    }
+  },
+  "$defs": {
+    "LegacyRunQuarantine": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A legacy execution whose external effects or termination cannot be proven. Present on held runs. A recorded stop request does not resolve the hold or establish that work stopped.",
+      "required": [
+        "reason",
+        "observedAt",
+        "claimEpoch",
+        "priorStatus",
+        "resolution"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "legacy_execution_unproven"
+          ]
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "claimEpoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "priorStatus": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "waiting"
+          ]
+        },
+        "resolution": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "actor",
+            "at"
+          ],
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "stop"
+              ]
+            },
+            "actor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "at": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        }
+      }
+    }
+  }
+}

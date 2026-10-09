@@ -1,0 +1,32 @@
+generated: '2026-10-09'
+method: derived
+source: https://docs.tale.dev/develop/mcp-endpoint + openapi/tale-dev-openapi.yml
+surfaces:
+  openapi: openapi/tale-dev-openapi.yml
+  mcp: https://your-host.example.com/api/v1/mcp (per deployment; tools/list requires an API key)
+crosswalk:
+- {tool: list_automations, category: automations, rest: [listAutomations], binding: name, confidence: medium}
+- {tool: get_automation, category: automations, rest: [getAutomation], binding: name, confidence: medium}
+- {tool: list_versions, category: automations, rest: [listAutomationVersions], binding: name, confidence: medium}
+- {tool: list_runs, category: runs, rest: [listAutomationRuns], binding: name, confidence: medium}
+- {tool: start_run, category: runs, rest: [startAutomationRun, startProjectAutomationRun], binding: semantics, confidence: medium}
+- {tool: get_run, category: runs, rest: [getRun], binding: name, confidence: medium}
+- {tool: cancel_run, category: runs, rest: [cancelRun], binding: name, confidence: medium}
+- {tool: list_triggers, category: triggers, rest: [listAutomationTriggers], binding: name, confidence: medium}
+- {tool: set_trigger, category: triggers, rest: [setAutomationTrigger], binding: name, confidence: medium}
+- {tool: delete_trigger, category: triggers, rest: [deleteAutomationTrigger], binding: name, confidence: medium}
+mcp_only:
+- {tool: get_docs, reason: automation authoring reference served only over MCP}
+- {tool: validate_automation, reason: no REST operation located}
+- {tool: test_automation, reason: no REST operation located}
+- {tool: run_automation, reason: runs an unsaved document; no REST operation located}
+- {tool: save_automation, reason: no REST operation located}
+- {tool: deploy_automation, reason: no REST operation located}
+- {tool: run_deployed, reason: semantics overlap start_run; not bound}
+- {tool: get_catalog, reason: no REST operation located}
+- {tool: search_catalog, reason: no REST operation located}
+- {tool: search_capabilities, reason: capability registry is MCP-only}
+- {tool: invoke_capability, reason: capability registry is MCP-only}
+- {tool: get_knowledge, reason: not bound by name; knowledge REST surface not mapped}
+coverage: {tools: 22, mapped: 10, mcp_only: 12}
+note: Tool names from the documented table; live schemas are behind API-key auth, so bindings are by name/semantics.
