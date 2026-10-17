@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Agents API
+  title: Tale Platform Agents API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Agents across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -362,13 +366,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/agents/{agentId}:
     get:
       tags:
@@ -867,15 +864,269 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
+  headers:
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
   schemas:
+    ProjectAgentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        harness:
+          type: string
+          minLength: 1
+          maxLength: 100
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: A model id `GET /api/v1/models` lists for this organization — with `modelProvider`, the exact (provider, model) pair
+        modelProvider:
+          type: string
+          maxLength: 200
+          description: The provider slug serving `model`, from `GET /api/v1/models`; omitted, any provider serving the id is accepted
+        skills:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+          description: Skill slugs the project can see (`GET /api/v1/skills`); an unknown slug is refused
+        connectors:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+          description: Connector slugs the organization has connected; an unknown or unconnected one is refused
+        tools:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+            enum:
+            - task_find
+            - task_get
+            - task_create
+            - task_comment
+            - task_update_status
+            - task_update_metadata
+            - task_review
+            - task_delegate_review
+            - task_start_agent
+            - task_upsert_by_external_ref
+            - document_find
+            - document_create
+            - knowledge_entry_find
+            - knowledge_entry_write
+            - contact_find
+            - product_find
+            - website_find
+          description: Workspace tool grants, from the catalog above; omitted resets to none
+        secrets:
+          maxItems: 25
+          type: array
+          items:
+            type: string
+        instructions:
+          type: string
+          maxLength: 20000
+        expectedUpdatedAt:
+          type: integer
+          minimum: 0
+          maximum: 8640000000000000
+          description: The `updatedAt` last read; a save against an agent that changed since answers 409 `PROJECT_AGENT_STALE` and writes nothing. Omitted, the save is unconditional.
+      required:
+      - name
+      - harness
+      - model
+      - skills
+      - connectors
+      additionalProperties: false
+      description: The full configuration a `PUT` replaces — `ProjectAgentInput` plus the optional `expectedUpdatedAt` precondition.
+    ProjectAgent:
+      type: object
+      required:
+      - id
+      - organizationId
+      - projectId
+      - name
+      - handle
+      - harness
+      - model
+      - modelProvider
+      - skills
+      - connectors
+      - tools
+      - secrets
+      - instructions
+      - managed
+      - createdBy
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        projectId:
+          type: string
+        name:
+          type: string
+        handle:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          maxLength: 52
+          description: 'The agent’s mention handle: lowercase letters, digits and single hyphens, made from its current name ("My Opus Agent #3" → `my-opus-agent-3`) and unique in the project (a second agent whose name gives the same handle gets `-02`, then `-03` …). It changes when the agent is renamed, and when a member or an automation of the organization comes to answer to it (an email name or a store name is the stronger claim). Address an agent by `id`; type `@handle` in a comment or a task description to mention it.'
+        harness:
+          type: string
+        model:
+          type: string
+        modelProvider:
+          type:
+          - string
+          - 'null'
+        skills:
+          type: array
+          items:
+            type: string
+        connectors:
+          type: array
+          items:
+            type: string
+        tools:
+          type: array
+          items:
+            type: string
+        secrets:
+          type: array
+          items:
+            type: string
+          description: Granted organization secret names. Secret values are never returned.
+        instructions:
+          type:
+          - string
+          - 'null'
+        managed:
+          type: boolean
+          description: 'The organization’s standard agent: Tale created it in a project that had no agents of its own, and keeps its runtime, model and instructions in line with the organization’s `standard_agent` governance policy, so it cannot be saved here (`PROJECT_AGENT_MANAGED`). It can be deleted.'
+        createdBy:
+          type: string
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+    ProjectAgentInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        harness:
+          type: string
+          minLength: 1
+          maxLength: 100
+        model:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: A model id `GET /api/v1/models` lists for this organization — with `modelProvider`, the exact (provider, model) pair
+        modelProvider:
+          type: string
+          maxLength: 200
+          description: The provider slug serving `model`, from `GET /api/v1/models`; omitted, any provider serving the id is accepted
+        skills:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+          description: Skill slugs the project can see (`GET /api/v1/skills`); an unknown slug is refused
+        connectors:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+          description: Connector slugs the organization has connected; an unknown or unconnected one is refused
+        tools:
+          type: array
+          maxItems: 25
+          items:
+            type: string
+            enum:
+            - task_find
+            - task_get
+            - task_create
+            - task_comment
+            - task_update_status
+            - task_update_metadata
+            - task_review
+            - task_delegate_review
+            - task_start_agent
+            - task_upsert_by_external_ref
+            - document_find
+            - document_create
+            - knowledge_entry_find
+            - knowledge_entry_write
+            - contact_find
+            - product_find
+            - website_find
+          description: Workspace tool grants, from the catalog above; omitted resets to none
+        secrets:
+          maxItems: 25
+          type: array
+          items:
+            type: string
+        instructions:
+          type: string
+          maxLength: 20000
+      required:
+      - name
+      - harness
+      - model
+      - skills
+      - connectors
+      additionalProperties: false
+      description: Full project-agent configuration. name, harness, model, skills and connectors are required. Harness must support project-agent execution — one the managed lane runs unattended on the platform’s own credentials; `GET /api/v1/models` lists them under `harnesses`. Every equipment field is checked against what this organization can serve — the model pair against `GET /api/v1/models`, skills against `GET /api/v1/skills`, connectors against the connected set, tools against the grant catalog — and refused by name otherwise. Omitted modelProvider/instructions reset to null; omitted tools/secrets reset to empty arrays. secrets contains organization secret NAMES, never values; only organization admins may change these grants, and a name the organization has not stored is refused (`PROJECT_AGENT_SECRET_UNKNOWN`), never pruned.
     Error:
       type: object
       required:
@@ -1174,272 +1425,8 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    ProjectAgentInput:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 120
-        harness:
-          type: string
-          minLength: 1
-          maxLength: 100
-        model:
-          type: string
-          minLength: 1
-          maxLength: 200
-          description: A model id `GET /api/v1/models` lists for this organization — with `modelProvider`, the exact (provider, model) pair
-        modelProvider:
-          type: string
-          maxLength: 200
-          description: The provider slug serving `model`, from `GET /api/v1/models`; omitted, any provider serving the id is accepted
-        skills:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-          description: Skill slugs the project can see (`GET /api/v1/skills`); an unknown slug is refused
-        connectors:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-          description: Connector slugs the organization has connected; an unknown or unconnected one is refused
-        tools:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-            enum:
-            - task_find
-            - task_get
-            - task_create
-            - task_comment
-            - task_update_status
-            - task_update_metadata
-            - task_review
-            - task_delegate_review
-            - task_start_agent
-            - task_upsert_by_external_ref
-            - document_find
-            - document_create
-            - knowledge_entry_find
-            - knowledge_entry_write
-            - contact_find
-            - product_find
-            - website_find
-          description: Workspace tool grants, from the catalog above; omitted resets to none
-        secrets:
-          maxItems: 25
-          type: array
-          items:
-            type: string
-        instructions:
-          type: string
-          maxLength: 20000
-      required:
-      - name
-      - harness
-      - model
-      - skills
-      - connectors
-      additionalProperties: false
-      description: Full project-agent configuration. name, harness, model, skills and connectors are required. Harness must support project-agent execution — one the managed lane runs unattended on the platform’s own credentials; `GET /api/v1/models` lists them under `harnesses`. Every equipment field is checked against what this organization can serve — the model pair against `GET /api/v1/models`, skills against `GET /api/v1/skills`, connectors against the connected set, tools against the grant catalog — and refused by name otherwise. Omitted modelProvider/instructions reset to null; omitted tools/secrets reset to empty arrays. secrets contains organization secret NAMES, never values; only organization admins may change these grants, and a name the organization has not stored is refused (`PROJECT_AGENT_SECRET_UNKNOWN`), never pruned.
-    ProjectAgent:
-      type: object
-      required:
-      - id
-      - organizationId
-      - projectId
-      - name
-      - handle
-      - harness
-      - model
-      - modelProvider
-      - skills
-      - connectors
-      - tools
-      - secrets
-      - instructions
-      - managed
-      - createdBy
-      - createdAt
-      - updatedAt
-      properties:
-        id:
-          type: string
-        organizationId:
-          type: string
-        projectId:
-          type: string
-        name:
-          type: string
-        handle:
-          type: string
-          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-          maxLength: 52
-          description: 'The agent’s mention handle: lowercase letters, digits and single hyphens, made from its current name ("My Opus Agent #3" → `my-opus-agent-3`) and unique in the project (a second agent whose name gives the same handle gets `-02`, then `-03` …). It changes when the agent is renamed, and when a member or an automation of the organization comes to answer to it (an email name or a store name is the stronger claim). Address an agent by `id`; type `@handle` in a comment or a task description to mention it.'
-        harness:
-          type: string
-        model:
-          type: string
-        modelProvider:
-          type:
-          - string
-          - 'null'
-        skills:
-          type: array
-          items:
-            type: string
-        connectors:
-          type: array
-          items:
-            type: string
-        tools:
-          type: array
-          items:
-            type: string
-        secrets:
-          type: array
-          items:
-            type: string
-          description: Granted organization secret names. Secret values are never returned.
-        instructions:
-          type:
-          - string
-          - 'null'
-        managed:
-          type: boolean
-          description: 'The organization’s standard agent: Tale created it in a project that had no agents of its own, and keeps its runtime, model and instructions in line with the organization’s `standard_agent` governance policy, so it cannot be saved here (`PROJECT_AGENT_MANAGED`). It can be deleted.'
-        createdBy:
-          type: string
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-    ProjectAgentUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 120
-        harness:
-          type: string
-          minLength: 1
-          maxLength: 100
-        model:
-          type: string
-          minLength: 1
-          maxLength: 200
-          description: A model id `GET /api/v1/models` lists for this organization — with `modelProvider`, the exact (provider, model) pair
-        modelProvider:
-          type: string
-          maxLength: 200
-          description: The provider slug serving `model`, from `GET /api/v1/models`; omitted, any provider serving the id is accepted
-        skills:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-          description: Skill slugs the project can see (`GET /api/v1/skills`); an unknown slug is refused
-        connectors:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-          description: Connector slugs the organization has connected; an unknown or unconnected one is refused
-        tools:
-          type: array
-          maxItems: 25
-          items:
-            type: string
-            enum:
-            - task_find
-            - task_get
-            - task_create
-            - task_comment
-            - task_update_status
-            - task_update_metadata
-            - task_review
-            - task_delegate_review
-            - task_start_agent
-            - task_upsert_by_external_ref
-            - document_find
-            - document_create
-            - knowledge_entry_find
-            - knowledge_entry_write
-            - contact_find
-            - product_find
-            - website_find
-          description: Workspace tool grants, from the catalog above; omitted resets to none
-        secrets:
-          maxItems: 25
-          type: array
-          items:
-            type: string
-        instructions:
-          type: string
-          maxLength: 20000
-        expectedUpdatedAt:
-          type: integer
-          minimum: 0
-          maximum: 8640000000000000
-          description: The `updatedAt` last read; a save against an agent that changed since answers 409 `PROJECT_AGENT_STALE` and writes nothing. Omitted, the save is unconditional.
-      required:
-      - name
-      - harness
-      - model
-      - skills
-      - connectors
-      additionalProperties: false
-      description: The full configuration a `PUT` replaces — `ProjectAgentInput` plus the optional `expectedUpdatedAt` precondition.
-  headers:
-    Allow:
-      description: The methods this path serves, comma-separated
-      schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
-      schema:
-        type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
-      schema:
-        type: string
-        example: 3.27.0
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
-      schema:
-        type: string
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
-      schema:
-        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

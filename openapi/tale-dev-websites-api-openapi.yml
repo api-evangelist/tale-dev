@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Websites API
+  title: Tale Platform Websites API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Websites across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -401,13 +405,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/websites/{id}:
     get:
       tags:
@@ -845,13 +842,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/websites/{id}/pages:
     get:
       tags:
@@ -1027,13 +1017,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/websites/{id}/sync:
     post:
       tags:
@@ -1178,13 +1161,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/websites/{id}/search:
     post:
       tags:
@@ -1352,15 +1328,265 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
   schemas:
+    WebsitePage:
+      type: object
+      required:
+      - url
+      - title
+      - wordCount
+      - status
+      - contentHash
+      - lastCrawledAt
+      - discoveredAt
+      - chunksCount
+      - indexed
+      - failCount
+      - lastError
+      - lastErrorKind
+      - lastErrorAt
+      properties:
+        url:
+          type: string
+        title:
+          type:
+          - string
+          - 'null'
+        wordCount:
+          type: integer
+        status:
+          type: string
+          enum:
+          - discovered
+          - active
+          description: '`discovered`: the crawler knows the URL but no fetch has stored it yet — never attempted, or every attempt failed (then `failCount` and `lastError` say so); `active`: a fetch stored the page at least once (`indexed` says whether its chunks are in the corpus). A DISCOVERED page the site answered 404/410 for leaves the listing, and so does one `robots.txt` has come to disallow; a LISTED one the site answers 404/410 for stays `discovered` with `http_error` naming the answer and is probed again next scan.'
+        contentHash:
+          type:
+          - string
+          - 'null'
+        lastCrawledAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds of the last ATTEMPT, stored or not
+        discoveredAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds
+        chunksCount:
+          type: integer
+        indexed:
+          type: boolean
+        failCount:
+          type: integer
+          description: 'Failed attempts in a row since the last stored fetch (or since the operator re-listed the URL); 0 when the last attempt stored the page. A discovered page stops being fetched after 5, and is probed once more after seven days; a listed one never stops. A failure of the render sandbox itself (its egress proxy refusing the connection, its browser stopping) counts nothing: the scan ends with that reason on the website'
+        lastError:
+          type:
+          - string
+          - 'null'
+          description: Why the last attempt stored nothing; `null` once a fetch stores the page again
+        lastErrorKind:
+          type:
+          - string
+          - 'null'
+          enum:
+          - invalid_url
+          - unsupported_protocol
+          - insecure_public_http
+          - private_ip
+          - host_not_allowed
+          - dns_failed
+          - redirect_missing_location
+          - redirect_limit_exceeded
+          - response_too_large
+          - response_too_small
+          - network_error
+          - tls_error
+          - timeout
+          - aborted
+          - http_error
+          - render_failed
+          - extraction_failed
+          - unsupported_content
+          - robots_noindex
+          - null
+          description: 'The last failure’s kind: a fetch refusal (`insecure_public_http` — a redirect to a plaintext URL, a loopback included, is refused before it is dialed; `private_ip` — a redirect that resolves to a private, loopback or metadata address; `host_not_allowed` — a redirect off the registered site, which the crawler does not follow (it used to wear the `private_ip` label); `dns_failed`; `tls_error` — the certificate is expired, self-signed, untrusted or for another host, permanent until the operator fixes it; `timeout` — the page did not finish downloading within the 30-second budget, or the browser could not load it within 20 seconds; `response_too_large`; `redirect_limit_exceeded` — more than five redirects; `network_error` — any other connection failure, naming its cause; …), `http_error` (a 4xx/5xx other than 404/410; for a listed URL 404/410 too), `render_failed` (the sandboxed browser gave up), `extraction_failed` (a linked document no extractor could read), `unsupported_content` (the crawler looked and stored nothing: a content type it cannot turn into text — JSON, XML, an image, a binary download — the row stays `discovered` and its `failCount` counts the attempt), or `robots_noindex` (the origin answered `X-Robots-Tag: noindex` or carries `<meta name="robots" content="noindex">`, honoured — what an earlier scan stored is dropped); `null` when the last attempt succeeded. `lastError` is one line naming the cause, never a framework call log'
+        lastErrorAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds of the last failure
+    WebsiteSearchResults:
+      type: object
+      required:
+      - results
+      - total
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebsiteSearchHit'
+        total:
+          type: integer
+          description: 'How many chunks match, across the whole site — not the size of this answer: it can exceed `results.length`, which `limit` caps. This door returns only the first `limit` hits and has no pagination, so `total` is the count, not a cursor.'
+    Website:
+      type: object
+      required:
+      - id
+      - organizationId
+      - domain
+      - scanInterval
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        domain:
+          type: string
+        kind:
+          type:
+          - string
+          - 'null'
+          enum:
+          - site
+          - list
+          - null
+        title:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+        scanInterval:
+          type: string
+        lastScannedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: 'When the last scan ENDED, epoch ms; `null` until the first scan finishes — `status: "scanning"` is the in-flight signal, and the page counts move while it runs'
+        status:
+          type:
+          - string
+          - 'null'
+          enum:
+          - scanning
+          - active
+          - error
+          - deleting
+          - null
+          description: 'The SCAN’s lifecycle, not the content’s health: `scanning` — in flight (a registered site starts here); `active` — the last scan finished and stored at least one page; `error` — the last scan failed or stored no page (`metadata.lastSyncError` says why; a domain that does not resolve or an expired certificate lands here, never on `active`); `deleting` — mid removal. The obvious health check is `status === "active"`; `crawledPageCount - failedPageCount` says how many pages it holds.'
+        pageCount:
+          type:
+          - integer
+          - 'null'
+          description: 'Pages the crawler knows on this site, as of the last corpus → row sync (`metadata.lastStatusSyncAt` says when): during a scan the sync runs after discovery and after every stored batch, at each link’s end and at the scan’s end, and `POST /api/v1/websites/{id}/sync` forces one'
+        crawledPageCount:
+          type:
+          - integer
+          - 'null'
+          description: Pages the crawler ATTEMPTED in its scans so far — stored or not; a page whose every attempt failed counts here too (see `failedPageCount`), and `indexed` per page is on `GET /api/v1/websites/{id}/pages`. Stamped by the corpus → row sync like `pageCount`
+        failedPageCount:
+          type:
+          - integer
+          - 'null'
+          description: Pages whose LAST attempt failed — each carries its `lastError` in the pages list. A page the crawler skipped on purpose (`lastErrorKind` `robots_noindex`, `unsupported_content` or `host_not_allowed`) keeps its reason but is not counted here; `null` until the next corpus → row sync stamps the row
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+    WebsitePatch:
+      type: object
+      additionalProperties: false
+      description: 'The domain is immutable after create (the crawl registration is keyed by it): a body carrying a `domain` other than the stored one is refused with 400 `WEBSITE_DOMAIN_IMMUTABLE` — delete the website and re-add it under the new domain. The stored value itself may be echoed, as a client that sends the resource it read does.'
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+        scanInterval:
+          type: string
+          enum:
+          - 60m
+          - 6h
+          - 12h
+          - 1d
+          - 5d
+          - 7d
+          - 30d
+        domain:
+          type: string
+          description: 'Echo only: the stored value, as a client that sends the resource it read does (compared without regard to case or surrounding whitespace). Any other value is refused with 400 `WEBSITE_DOMAIN_IMMUTABLE`; the domain itself never changes.'
+    WebsiteSearchHit:
+      type: object
+      required:
+      - url
+      - title
+      - content
+      - chunkIndex
+      - score
+      properties:
+        url:
+          type: string
+        title:
+          type:
+          - string
+          - 'null'
+        content:
+          type: string
+          description: The matching passage
+        chunkIndex:
+          type: integer
+        score:
+          type: number
+          description: 'The BM25 weight of the keyword match (ParadeDB `paradedb.score`): unbounded and comparable only within one response — never a cosine or a confidence, and never comparable across sites or calls. `0` on every hit when the knowledge database lacks ParadeDB and the door fell back to a substring match. This door has no dense leg; for `similarity` and `minSimilarity`, use `POST /api/v1/knowledge/search` with `corpus: "web"`.'
+    WebsitePageList:
+      type: object
+      x-tale-pagination: offset
+      required:
+      - pages
+      - total
+      - offset
+      - hasMore
+      - isDone
+      - continueCursor
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebsitePage'
+        total:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+        isDone:
+          type: boolean
+          description: True when the window reached the end (`!hasMore`)
+        continueCursor:
+          type: string
+          description: Pass back as `cursor` for the next window — the next `offset`, signed; empty when `isDone`
     Error:
       type: object
       required:
@@ -1659,93 +1885,6 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    WebsiteSearchHit:
-      type: object
-      required:
-      - url
-      - title
-      - content
-      - chunkIndex
-      - score
-      properties:
-        url:
-          type: string
-        title:
-          type:
-          - string
-          - 'null'
-        content:
-          type: string
-          description: The matching passage
-        chunkIndex:
-          type: integer
-        score:
-          type: number
-          description: 'The BM25 weight of the keyword match (ParadeDB `paradedb.score`): unbounded and comparable only within one response — never a cosine or a confidence, and never comparable across sites or calls. `0` on every hit when the knowledge database lacks ParadeDB and the door fell back to a substring match. This door has no dense leg; for `similarity` and `minSimilarity`, use `POST /api/v1/knowledge/search` with `corpus: "web"`.'
-    WebsiteSearchResults:
-      type: object
-      required:
-      - results
-      - total
-      properties:
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/WebsiteSearchHit'
-        total:
-          type: integer
-          description: 'How many chunks match, across the whole site — not the size of this answer: it can exceed `results.length`, which `limit` caps. This door returns only the first `limit` hits and has no pagination, so `total` is the count, not a cursor.'
-    WebsitePatch:
-      type: object
-      additionalProperties: false
-      description: 'The domain is immutable after create (the crawl registration is keyed by it): a body carrying a `domain` other than the stored one is refused with 400 `WEBSITE_DOMAIN_IMMUTABLE` — delete the website and re-add it under the new domain. The stored value itself may be echoed, as a client that sends the resource it read does.'
-      properties:
-        title:
-          type: string
-          maxLength: 200
-        description:
-          type: string
-          maxLength: 2000
-        scanInterval:
-          type: string
-          enum:
-          - 60m
-          - 6h
-          - 12h
-          - 1d
-          - 5d
-          - 7d
-          - 30d
-        domain:
-          type: string
-          description: 'Echo only: the stored value, as a client that sends the resource it read does (compared without regard to case or surrounding whitespace). Any other value is refused with 400 `WEBSITE_DOMAIN_IMMUTABLE`; the domain itself never changes.'
-    WebsitePageList:
-      type: object
-      x-tale-pagination: offset
-      required:
-      - pages
-      - total
-      - offset
-      - hasMore
-      - isDone
-      - continueCursor
-      properties:
-        pages:
-          type: array
-          items:
-            $ref: '#/components/schemas/WebsitePage'
-        total:
-          type: integer
-        offset:
-          type: integer
-        hasMore:
-          type: boolean
-        isDone:
-          type: boolean
-          description: True when the window reached the end (`!hasMore`)
-        continueCursor:
-          type: string
-          description: Pass back as `cursor` for the next window — the next `offset`, signed; empty when `isDone`
     WebsiteInput:
       type: object
       required:
@@ -1781,190 +1920,12 @@ components:
             maxLength: 2048
           maxItems: 10000
           description: Registers a curated URL list on the domain instead of a whole-site crawl. Every entry must be an http(s) URL on the domain or its www/apex sibling; re-posting merges new URLs into the existing list and answers 200 with the existing id.
-    Website:
-      type: object
-      required:
-      - id
-      - organizationId
-      - domain
-      - scanInterval
-      - createdAt
-      - updatedAt
-      properties:
-        id:
-          type: string
-        organizationId:
-          type: string
-        domain:
-          type: string
-        kind:
-          type:
-          - string
-          - 'null'
-          enum:
-          - site
-          - list
-          - null
-        title:
-          type:
-          - string
-          - 'null'
-        description:
-          type:
-          - string
-          - 'null'
-        scanInterval:
-          type: string
-        lastScannedAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: 'When the last scan ENDED, epoch ms; `null` until the first scan finishes — `status: "scanning"` is the in-flight signal, and the page counts move while it runs'
-        status:
-          type:
-          - string
-          - 'null'
-          enum:
-          - scanning
-          - active
-          - error
-          - deleting
-          - null
-          description: 'The SCAN’s lifecycle, not the content’s health: `scanning` — in flight (a registered site starts here); `active` — the last scan finished and stored at least one page; `error` — the last scan failed or stored no page (`metadata.lastSyncError` says why; a domain that does not resolve or an expired certificate lands here, never on `active`); `deleting` — mid removal. The obvious health check is `status === "active"`; `crawledPageCount - failedPageCount` says how many pages it holds.'
-        pageCount:
-          type:
-          - integer
-          - 'null'
-          description: 'Pages the crawler knows on this site, as of the last corpus → row sync (`metadata.lastStatusSyncAt` says when): during a scan the sync runs after discovery and after every stored batch, at each link’s end and at the scan’s end, and `POST /api/v1/websites/{id}/sync` forces one'
-        crawledPageCount:
-          type:
-          - integer
-          - 'null'
-          description: Pages the crawler ATTEMPTED in its scans so far — stored or not; a page whose every attempt failed counts here too (see `failedPageCount`), and `indexed` per page is on `GET /api/v1/websites/{id}/pages`. Stamped by the corpus → row sync like `pageCount`
-        failedPageCount:
-          type:
-          - integer
-          - 'null'
-          description: Pages whose LAST attempt failed — each carries its `lastError` in the pages list. A page the crawler skipped on purpose (`lastErrorKind` `robots_noindex`, `unsupported_content` or `host_not_allowed`) keeps its reason but is not counted here; `null` until the next corpus → row sync stamps the row
-        metadata:
-          type:
-          - object
-          - 'null'
-          additionalProperties: true
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-    WebsitePage:
-      type: object
-      required:
-      - url
-      - title
-      - wordCount
-      - status
-      - contentHash
-      - lastCrawledAt
-      - discoveredAt
-      - chunksCount
-      - indexed
-      - failCount
-      - lastError
-      - lastErrorKind
-      - lastErrorAt
-      properties:
-        url:
-          type: string
-        title:
-          type:
-          - string
-          - 'null'
-        wordCount:
-          type: integer
-        status:
-          type: string
-          enum:
-          - discovered
-          - active
-          description: '`discovered`: the crawler knows the URL but no fetch has stored it yet — never attempted, or every attempt failed (then `failCount` and `lastError` say so); `active`: a fetch stored the page at least once (`indexed` says whether its chunks are in the corpus). A DISCOVERED page the site answered 404/410 for leaves the listing, and so does one `robots.txt` has come to disallow; a LISTED one the site answers 404/410 for stays `discovered` with `http_error` naming the answer and is probed again next scan.'
-        contentHash:
-          type:
-          - string
-          - 'null'
-        lastCrawledAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: Epoch milliseconds of the last ATTEMPT, stored or not
-        discoveredAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: Epoch milliseconds
-        chunksCount:
-          type: integer
-        indexed:
-          type: boolean
-        failCount:
-          type: integer
-          description: 'Failed attempts in a row since the last stored fetch (or since the operator re-listed the URL); 0 when the last attempt stored the page. A discovered page stops being fetched after 5, and is probed once more after seven days; a listed one never stops. A failure of the render sandbox itself (its egress proxy refusing the connection, its browser stopping) counts nothing: the scan ends with that reason on the website'
-        lastError:
-          type:
-          - string
-          - 'null'
-          description: Why the last attempt stored nothing; `null` once a fetch stores the page again
-        lastErrorKind:
-          type:
-          - string
-          - 'null'
-          enum:
-          - invalid_url
-          - unsupported_protocol
-          - insecure_public_http
-          - private_ip
-          - host_not_allowed
-          - dns_failed
-          - redirect_missing_location
-          - redirect_limit_exceeded
-          - response_too_large
-          - response_too_small
-          - network_error
-          - tls_error
-          - timeout
-          - aborted
-          - http_error
-          - render_failed
-          - extraction_failed
-          - unsupported_content
-          - robots_noindex
-          - null
-          description: 'The last failure’s kind: a fetch refusal (`insecure_public_http` — a redirect to a plaintext URL, a loopback included, is refused before it is dialed; `private_ip` — a redirect that resolves to a private, loopback or metadata address; `host_not_allowed` — a redirect off the registered site, which the crawler does not follow (it used to wear the `private_ip` label); `dns_failed`; `tls_error` — the certificate is expired, self-signed, untrusted or for another host, permanent until the operator fixes it; `timeout` — the page did not finish downloading within the 30-second budget, or the browser could not load it within 20 seconds; `response_too_large`; `redirect_limit_exceeded` — more than five redirects; `network_error` — any other connection failure, naming its cause; …), `http_error` (a 4xx/5xx other than 404/410; for a listed URL 404/410 too), `render_failed` (the sandboxed browser gave up), `extraction_failed` (a linked document no extractor could read), `unsupported_content` (the crawler looked and stored nothing: a content type it cannot turn into text — JSON, XML, an image, a binary download — the row stays `discovered` and its `failCount` counts the attempt), or `robots_noindex` (the origin answered `X-Robots-Tag: noindex` or carries `<meta name="robots" content="noindex">`, honoured — what an earlier scan stored is dropped); `null` when the last attempt succeeded. `lastError` is one line naming the cause, never a framework call log'
-        lastErrorAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: Epoch milliseconds of the last failure
   headers:
-    Allow:
-      description: The methods this path serves, comma-separated
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
       schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
+        type: integer
+        minimum: 1
     WWWAuthenticate:
       description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
       schema:
@@ -1974,17 +1935,25 @@ components:
       schema:
         type: string
         example: 3.27.0
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
       schema:
         type: string
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
     XRequestId:
       description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
       schema:
         type: string
   securitySchemes:
@@ -1992,6 +1961,3 @@ components:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

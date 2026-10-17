@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Skills API
+  title: Tale Platform Skills API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Skills across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -192,13 +196,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/skills/{slug}:
     get:
       tags:
@@ -764,13 +761,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/skills/{slug}/files/{path}:
     get:
       tags:
@@ -963,64 +953,170 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
-  headers:
-    LastModified:
-      description: When the stored object was last written (HTTP date)
-      schema:
-        type: string
-    Allow:
-      description: The methods this path serves, comma-separated
-      schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ContentDisposition:
-      description: The stored file name as an RFC 6266 attachment (`filename` and `filename*`)
-      schema:
-        type: string
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
-      schema:
-        type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
-      schema:
-        type: string
-        example: 3.27.0
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
-      schema:
-        type: string
-    ContentLength:
-      description: The byte length of the response body
-      schema:
-        type: integer
-        minimum: 0
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
-      schema:
-        type: string
   schemas:
+    Skill:
+      type: object
+      description: 'The skill bundle: its summary fields plus the markdown body and the bundle’s file list'
+      required:
+      - slug
+      - description
+      - visibility
+      - origin
+      - canEdit
+      - etag
+      - updatedAt
+      - body
+      - files
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          maxLength: 64
+        description:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - team
+          - org
+          description: '`org` — every member; `team` — members of `teams`; `private` — retired for new skills, still carried by pre-existing bundles their owner alone sees'
+        teams:
+          type: array
+          items:
+            type: string
+          description: Team ids a `team` skill is shared with; absent otherwise
+        owner:
+          type: string
+          description: The member who created the bundle, as a user id — absent when none is recorded. A skill created in the editor or uploaded belongs to the member who created it; a declared `owner` in an uploaded bundle is never honoured
+        origin:
+          type: string
+          enum:
+          - builtin
+          - release
+          - member
+          description: 'Where the skill came from: `release` — a managed configuration release installed it (its frontmatter carries `metadata.tale-release`); `builtin` — no owner is recorded, as on the catalog copies an organization starts with; `member` — the member named by `owner` created it'
+        ownerName:
+          type: string
+          description: The display name of `owner` (their email when they have none) while they are a member of the organization; absent once they have left, and whenever `owner` is
+        updatedBy:
+          type: string
+          description: The user id of the member whose write through Tale produced the stored SKILL.md — present only when the newest recorded write of the skill is an edit whose resulting tag is the current `etag`. Absent on a skill nobody has edited since it was created, and on one changed outside Tale since its last edit
+        updatedByName:
+          type: string
+          description: The display name of `updatedBy` while they are a member of the organization
+        icon:
+          type: string
+          description: An Iconify id shown on the skill’s card
+        labels:
+          type: array
+          items:
+            type: string
+          description: Display chips on the skill’s card
+        disableModelInvocation:
+          type: boolean
+          description: True when the model must not reach for the skill on its own; it stays available by explicit name
+        canEdit:
+          type: boolean
+          description: Whether this key may edit the bundle; shipped skills are organization bundles an administrator may overwrite
+        etag:
+          type: string
+          description: The strong entity tag of the bundle’s SKILL.md — the quoted SHA-256 of its content, the `ETag` the GET carries and the value a conditional save sends back as `If-Match`. Moves with every save of the document; the bundle’s other files never move it
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: When SKILL.md was last written
+        body:
+          type: string
+          description: The SKILL.md markdown after the frontmatter, as stored — always newline-terminated
+        files:
+          type: array
+          description: Every file of the bundle (SKILL.md included), sorted by path
+          items:
+            type: object
+            required:
+            - path
+            - size
+            properties:
+              path:
+                type: string
+                description: Bundle-relative POSIX path
+              size:
+                type: integer
+                description: Bytes
+            additionalProperties: false
+      additionalProperties: false
+    SkillSummary:
+      type: object
+      required:
+      - slug
+      - description
+      - visibility
+      - origin
+      - canEdit
+      - etag
+      - updatedAt
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          maxLength: 64
+        description:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - team
+          - org
+          description: '`org` — every member; `team` — members of `teams`; `private` — retired for new skills, still carried by pre-existing bundles their owner alone sees'
+        teams:
+          type: array
+          items:
+            type: string
+          description: Team ids a `team` skill is shared with; absent otherwise
+        owner:
+          type: string
+          description: The member who created the bundle, as a user id — absent when none is recorded. A skill created in the editor or uploaded belongs to the member who created it; a declared `owner` in an uploaded bundle is never honoured
+        origin:
+          type: string
+          enum:
+          - builtin
+          - release
+          - member
+          description: 'Where the skill came from: `release` — a managed configuration release installed it (its frontmatter carries `metadata.tale-release`); `builtin` — no owner is recorded, as on the catalog copies an organization starts with; `member` — the member named by `owner` created it'
+        ownerName:
+          type: string
+          description: The display name of `owner` (their email when they have none) while they are a member of the organization; absent once they have left, and whenever `owner` is
+        updatedBy:
+          type: string
+          description: The user id of the member whose write through Tale produced the stored SKILL.md — present only when the newest recorded write of the skill is an edit whose resulting tag is the current `etag`. Absent on a skill nobody has edited since it was created, and on one changed outside Tale since its last edit
+        updatedByName:
+          type: string
+          description: The display name of `updatedBy` while they are a member of the organization
+        icon:
+          type: string
+          description: An Iconify id shown on the skill’s card
+        labels:
+          type: array
+          items:
+            type: string
+          description: Display chips on the skill’s card
+        disableModelInvocation:
+          type: boolean
+          description: True when the model must not reach for the skill on its own; it stays available by explicit name
+        canEdit:
+          type: boolean
+          description: Whether this key may edit the bundle; shipped skills are organization bundles an administrator may overwrite
+        etag:
+          type: string
+          description: The strong entity tag of the bundle’s SKILL.md — the quoted SHA-256 of its content, the `ETag` the GET carries and the value a conditional save sends back as `If-Match`. Moves with every save of the document; the bundle’s other files never move it
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: When SKILL.md was last written
+      additionalProperties: false
     Error:
       type: object
       required:
@@ -1319,173 +1415,57 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    SkillSummary:
-      type: object
-      required:
-      - slug
-      - description
-      - visibility
-      - origin
-      - canEdit
-      - etag
-      - updatedAt
-      properties:
-        slug:
-          type: string
-          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-          maxLength: 64
-        description:
-          type: string
-        visibility:
-          type: string
-          enum:
-          - private
-          - team
-          - org
-          description: '`org` — every member; `team` — members of `teams`; `private` — retired for new skills, still carried by pre-existing bundles their owner alone sees'
-        teams:
-          type: array
-          items:
-            type: string
-          description: Team ids a `team` skill is shared with; absent otherwise
-        owner:
-          type: string
-          description: The member who created the bundle, as a user id — absent when none is recorded. A skill created in the editor or uploaded belongs to the member who created it; a declared `owner` in an uploaded bundle is never honoured
-        origin:
-          type: string
-          enum:
-          - builtin
-          - release
-          - member
-          description: 'Where the skill came from: `release` — a managed configuration release installed it (its frontmatter carries `metadata.tale-release`); `builtin` — no owner is recorded, as on the catalog copies an organization starts with; `member` — the member named by `owner` created it'
-        ownerName:
-          type: string
-          description: The display name of `owner` (their email when they have none) while they are a member of the organization; absent once they have left, and whenever `owner` is
-        updatedBy:
-          type: string
-          description: The user id of the member whose write through Tale produced the stored SKILL.md — present only when the newest recorded write of the skill is an edit whose resulting tag is the current `etag`. Absent on a skill nobody has edited since it was created, and on one changed outside Tale since its last edit
-        updatedByName:
-          type: string
-          description: The display name of `updatedBy` while they are a member of the organization
-        icon:
-          type: string
-          description: An Iconify id shown on the skill’s card
-        labels:
-          type: array
-          items:
-            type: string
-          description: Display chips on the skill’s card
-        disableModelInvocation:
-          type: boolean
-          description: True when the model must not reach for the skill on its own; it stays available by explicit name
-        canEdit:
-          type: boolean
-          description: Whether this key may edit the bundle; shipped skills are organization bundles an administrator may overwrite
-        etag:
-          type: string
-          description: The strong entity tag of the bundle’s SKILL.md — the quoted SHA-256 of its content, the `ETag` the GET carries and the value a conditional save sends back as `If-Match`. Moves with every save of the document; the bundle’s other files never move it
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: When SKILL.md was last written
-      additionalProperties: false
-    Skill:
-      type: object
-      description: 'The skill bundle: its summary fields plus the markdown body and the bundle’s file list'
-      required:
-      - slug
-      - description
-      - visibility
-      - origin
-      - canEdit
-      - etag
-      - updatedAt
-      - body
-      - files
-      properties:
-        slug:
-          type: string
-          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-          maxLength: 64
-        description:
-          type: string
-        visibility:
-          type: string
-          enum:
-          - private
-          - team
-          - org
-          description: '`org` — every member; `team` — members of `teams`; `private` — retired for new skills, still carried by pre-existing bundles their owner alone sees'
-        teams:
-          type: array
-          items:
-            type: string
-          description: Team ids a `team` skill is shared with; absent otherwise
-        owner:
-          type: string
-          description: The member who created the bundle, as a user id — absent when none is recorded. A skill created in the editor or uploaded belongs to the member who created it; a declared `owner` in an uploaded bundle is never honoured
-        origin:
-          type: string
-          enum:
-          - builtin
-          - release
-          - member
-          description: 'Where the skill came from: `release` — a managed configuration release installed it (its frontmatter carries `metadata.tale-release`); `builtin` — no owner is recorded, as on the catalog copies an organization starts with; `member` — the member named by `owner` created it'
-        ownerName:
-          type: string
-          description: The display name of `owner` (their email when they have none) while they are a member of the organization; absent once they have left, and whenever `owner` is
-        updatedBy:
-          type: string
-          description: The user id of the member whose write through Tale produced the stored SKILL.md — present only when the newest recorded write of the skill is an edit whose resulting tag is the current `etag`. Absent on a skill nobody has edited since it was created, and on one changed outside Tale since its last edit
-        updatedByName:
-          type: string
-          description: The display name of `updatedBy` while they are a member of the organization
-        icon:
-          type: string
-          description: An Iconify id shown on the skill’s card
-        labels:
-          type: array
-          items:
-            type: string
-          description: Display chips on the skill’s card
-        disableModelInvocation:
-          type: boolean
-          description: True when the model must not reach for the skill on its own; it stays available by explicit name
-        canEdit:
-          type: boolean
-          description: Whether this key may edit the bundle; shipped skills are organization bundles an administrator may overwrite
-        etag:
-          type: string
-          description: The strong entity tag of the bundle’s SKILL.md — the quoted SHA-256 of its content, the `ETag` the GET carries and the value a conditional save sends back as `If-Match`. Moves with every save of the document; the bundle’s other files never move it
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: When SKILL.md was last written
-        body:
-          type: string
-          description: The SKILL.md markdown after the frontmatter, as stored — always newline-terminated
-        files:
-          type: array
-          description: Every file of the bundle (SKILL.md included), sorted by path
-          items:
-            type: object
-            required:
-            - path
-            - size
-            properties:
-              path:
-                type: string
-                description: Bundle-relative POSIX path
-              size:
-                type: integer
-                description: Bytes
-            additionalProperties: false
-      additionalProperties: false
+  headers:
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    ContentDisposition:
+      description: The stored file name as an RFC 6266 attachment (`filename` and `filename*`)
+      schema:
+        type: string
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    ContentLength:
+      description: The byte length of the response body
+      schema:
+        type: integer
+        minimum: 0
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
+    LastModified:
+      description: When the stored object was last written (HTTP date)
+      schema:
+        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

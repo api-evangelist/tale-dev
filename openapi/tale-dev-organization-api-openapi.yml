@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Organization API
+  title: Tale Platform Organization API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Organization across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -165,13 +169,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/teams:
     get:
       tags:
@@ -327,14 +324,39 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
+  headers:
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
   schemas:
     Team:
       type: object
@@ -353,6 +375,165 @@ components:
         member:
           type: boolean
           description: Whether the key holder belongs to the team — an organization admin may assign any team, another role only the teams it is a member of
+    Me:
+      type: object
+      required:
+      - user
+      - organization
+      - organizations
+      - capabilities
+      - key
+      additionalProperties: false
+      properties:
+        key:
+          type:
+          - object
+          - 'null'
+          description: The API key this request authenticated with — keys are minted, rotated and revoked in the app (Settings > API > REST), never through this surface, so this is where an unattended caller sees its own expiry coming. `null` only when the key was revoked while the request was in flight.
+          required:
+          - id
+          - name
+          - expiresAt
+          - owner
+          additionalProperties: false
+          properties:
+            id:
+              type: string
+            name:
+              type:
+              - string
+              - 'null'
+              description: The name it was minted under
+            expiresAt:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+              description: When the key stops authenticating; `null` for a key minted to never expire
+            owner:
+              type: object
+              description: 'Whose key it is. `user`: a person’s own key, working in every organization they belong to. `member`: a key an Owner or Admin made for that member, working in this organization only. `team`, `project`, `organization`: a key that is not a person — it acts as its own identity with the role it was made with (`organization.role`), in this organization only; a team’s key sees what that team sees, and a project’s key reaches its project alone (any other route answers 403 `API_KEY_SCOPE_FORBIDDEN`). A key bound to one organization needs no `X-Organization-Slug`; one naming another organization answers 403 `ORG_FORBIDDEN`'
+              required:
+              - kind
+              - team
+              - project
+              additionalProperties: false
+              properties:
+                kind:
+                  type: string
+                  enum:
+                  - user
+                  - member
+                  - team
+                  - project
+                  - organization
+                team:
+                  type:
+                  - object
+                  - 'null'
+                  required:
+                  - id
+                  - name
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type:
+                      - string
+                      - 'null'
+                  description: The team a team’s key belongs to
+                project:
+                  type:
+                  - object
+                  - 'null'
+                  required:
+                  - id
+                  - name
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type:
+                      - string
+                      - 'null'
+                  description: The project a project’s key belongs to
+        user:
+          type: object
+          description: 'Who the key acts as: its holder, or — for a team’s, a project’s or the organization’s key — the key’s own identity, whose `email` is empty'
+          required:
+          - id
+          - email
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+        organization:
+          type: object
+          description: The organization this request resolved to
+          required:
+          - id
+          - slug
+          - role
+          properties:
+            id:
+              type: string
+            slug:
+              type: string
+              description: The `X-Organization-Slug` value for it
+            role:
+              type: string
+        organizations:
+          type: array
+          description: Every organization the key holder belongs to (disabled memberships excluded); for a key bound to one organization, that organization alone
+          items:
+            type: object
+            required:
+            - id
+            - slug
+            - name
+            - role
+            properties:
+              id:
+                type: string
+              slug:
+                type:
+                - string
+                - 'null'
+              name:
+                type: string
+              role:
+                type: string
+        capabilities:
+          type: object
+          description: What this key may do — the gates a deployment knob, the role or an administrator’s grant decides, answered here so a client learns them before its first write rather than from a 403
+          required:
+          - deploymentEditor
+          - developer
+          - notificationExport
+          - actAs
+          - skillPublish
+          - modelApi
+          additionalProperties: false
+          properties:
+            deploymentEditor:
+              type: boolean
+              description: True when the key holder administers an organization and their e-mail is on the deployment editor allowlist (`TALE_DEPLOYMENT_CONFIG_ADMINS`) — the gate behind the browser-session pool’s import and delete, which answer 403 otherwise
+            developer:
+              type: boolean
+              description: True when the key holder’s role (owner, admin, developer) carries the developer capability — the gate on a live `POST …/runs`, `POST …/cancel`, `DELETE /runs/{runId}`, `PUT`/`DELETE …/triggers`, `DELETE /automations/{name}`, the project install and uninstall, and the MCP `save_automation`/`deploy_automation`/`set_trigger` tools; false there answers 403 `ROLE_FORBIDDEN`
+            actAs:
+              type: boolean
+              description: 'True when the key holder may name an `actor` — the verified member a relayed gesture is recorded for — on `POST …/runs/{runId}/asks/{askId}` and `POST …/tasks/{taskId}/review`: an organization owner or administrator by role, or any other member through a live `tale:rest.act-as` capability an administrator granted in the competence register (organization-scoped, optionally expiring, revocable, revoked with the membership); an `actor` sent without it answers 403 `ROLE_FORBIDDEN`'
+            notificationExport:
+              type: boolean
+              description: True when the key holder may export members’ notifications through `GET /api/v1/notifications/sync` — an organization owner or administrator by role, or any other member through a live `tale:notifications.export` capability an administrator granted in the competence register (organization-scoped, optionally expiring, revocable, revoked with the membership); false there answers 403 `ROLE_FORBIDDEN`
+            skillPublish:
+              type: boolean
+              description: 'True when the key holder may share a skill with the whole organization through `PUT /api/v1/skills/{slug}` — create a `visibility: org` skill, widen one to `org`, or change an `org` skill in place. Every member may while the organization has no skill sharing policy; under one it is Editors and above or owners and administrators only, plus any member holding a live `tale:skills.publish` capability an administrator granted in the competence register. False there answers 403 `SKILL_PUBLISH_FORBIDDEN`; sharing with the key holder’s own teams is unaffected'
+            modelApi:
+              type: boolean
+              description: 'True when the key holder may call the compatible model endpoints (`/api/v1/openai`, `/api/v1/anthropic`): the organization turned them on in its model access policy, and the key holder is an owner, administrator or developer by role, or any other member holding a live `tale:models.api` capability an administrator granted in the competence register. False there answers 403 `MODEL_API_DISABLED` or `MODEL_API_FORBIDDEN`'
     Error:
       type: object
       required:
@@ -651,202 +832,8 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    Me:
-      type: object
-      required:
-      - user
-      - organization
-      - organizations
-      - capabilities
-      - key
-      additionalProperties: false
-      properties:
-        key:
-          type:
-          - object
-          - 'null'
-          description: The API key this request authenticated with — keys are minted, rotated and revoked in the app (Settings > API > REST), never through this surface, so this is where an unattended caller sees its own expiry coming. `null` only when the key was revoked while the request was in flight.
-          required:
-          - id
-          - name
-          - expiresAt
-          - owner
-          additionalProperties: false
-          properties:
-            id:
-              type: string
-            name:
-              type:
-              - string
-              - 'null'
-              description: The name it was minted under
-            expiresAt:
-              type:
-              - integer
-              - 'null'
-              minimum: 0
-              description: When the key stops authenticating; `null` for a key minted to never expire
-            owner:
-              type: object
-              description: 'Whose key it is. `user`: a person’s own key, working in every organization they belong to. `member`: a key an Owner or Admin made for that member, working in this organization only. `team`, `project`, `organization`: a key that is not a person — it acts as its own identity with the role it was made with (`organization.role`), in this organization only; a team’s key sees what that team sees, and a project’s key reaches its project alone (any other route answers 403 `API_KEY_SCOPE_FORBIDDEN`). A key bound to one organization needs no `X-Organization-Slug`; one naming another organization answers 403 `ORG_FORBIDDEN`'
-              required:
-              - kind
-              - team
-              - project
-              additionalProperties: false
-              properties:
-                kind:
-                  type: string
-                  enum:
-                  - user
-                  - member
-                  - team
-                  - project
-                  - organization
-                team:
-                  type:
-                  - object
-                  - 'null'
-                  required:
-                  - id
-                  - name
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type:
-                      - string
-                      - 'null'
-                  description: The team a team’s key belongs to
-                project:
-                  type:
-                  - object
-                  - 'null'
-                  required:
-                  - id
-                  - name
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type:
-                      - string
-                      - 'null'
-                  description: The project a project’s key belongs to
-        user:
-          type: object
-          description: 'Who the key acts as: its holder, or — for a team’s, a project’s or the organization’s key — the key’s own identity, whose `email` is empty'
-          required:
-          - id
-          - email
-          properties:
-            id:
-              type: string
-            email:
-              type: string
-        organization:
-          type: object
-          description: The organization this request resolved to
-          required:
-          - id
-          - slug
-          - role
-          properties:
-            id:
-              type: string
-            slug:
-              type: string
-              description: The `X-Organization-Slug` value for it
-            role:
-              type: string
-        organizations:
-          type: array
-          description: Every organization the key holder belongs to (disabled memberships excluded); for a key bound to one organization, that organization alone
-          items:
-            type: object
-            required:
-            - id
-            - slug
-            - name
-            - role
-            properties:
-              id:
-                type: string
-              slug:
-                type:
-                - string
-                - 'null'
-              name:
-                type: string
-              role:
-                type: string
-        capabilities:
-          type: object
-          description: What this key may do — the gates a deployment knob, the role or an administrator’s grant decides, answered here so a client learns them before its first write rather than from a 403
-          required:
-          - deploymentEditor
-          - developer
-          - notificationExport
-          - actAs
-          - skillPublish
-          - modelApi
-          additionalProperties: false
-          properties:
-            deploymentEditor:
-              type: boolean
-              description: True when the key holder administers an organization and their e-mail is on the deployment editor allowlist (`TALE_DEPLOYMENT_CONFIG_ADMINS`) — the gate behind the browser-session pool’s import and delete, which answer 403 otherwise
-            developer:
-              type: boolean
-              description: True when the key holder’s role (owner, admin, developer) carries the developer capability — the gate on a live `POST …/runs`, `POST …/cancel`, `DELETE /runs/{runId}`, `PUT`/`DELETE …/triggers`, `DELETE /automations/{name}`, the project install and uninstall, and the MCP `save_automation`/`deploy_automation`/`set_trigger` tools; false there answers 403 `ROLE_FORBIDDEN`
-            actAs:
-              type: boolean
-              description: 'True when the key holder may name an `actor` — the verified member a relayed gesture is recorded for — on `POST …/runs/{runId}/asks/{askId}` and `POST …/tasks/{taskId}/review`: an organization owner or administrator by role, or any other member through a live `tale:rest.act-as` capability an administrator granted in the competence register (organization-scoped, optionally expiring, revocable, revoked with the membership); an `actor` sent without it answers 403 `ROLE_FORBIDDEN`'
-            notificationExport:
-              type: boolean
-              description: True when the key holder may export members’ notifications through `GET /api/v1/notifications/sync` — an organization owner or administrator by role, or any other member through a live `tale:notifications.export` capability an administrator granted in the competence register (organization-scoped, optionally expiring, revocable, revoked with the membership); false there answers 403 `ROLE_FORBIDDEN`
-            skillPublish:
-              type: boolean
-              description: 'True when the key holder may share a skill with the whole organization through `PUT /api/v1/skills/{slug}` — create a `visibility: org` skill, widen one to `org`, or change an `org` skill in place. Every member may while the organization has no skill sharing policy; under one it is Editors and above or owners and administrators only, plus any member holding a live `tale:skills.publish` capability an administrator granted in the competence register. False there answers 403 `SKILL_PUBLISH_FORBIDDEN`; sharing with the key holder’s own teams is unaffected'
-            modelApi:
-              type: boolean
-              description: 'True when the key holder may call the compatible model endpoints (`/api/v1/openai`, `/api/v1/anthropic`): the organization turned them on in its model access policy, and the key holder is an owner, administrator or developer by role, or any other member holding a live `tale:models.api` capability an administrator granted in the competence register. False there answers 403 `MODEL_API_DISABLED` or `MODEL_API_FORBIDDEN`'
-  headers:
-    Allow:
-      description: The methods this path serves, comma-separated
-      schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
-      schema:
-        type: string
-        example: 3.27.0
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
-      schema:
-        type: string
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
-      schema:
-        type: string
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
-      schema:
-        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

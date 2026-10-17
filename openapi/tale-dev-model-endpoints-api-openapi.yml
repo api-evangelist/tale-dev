@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Model endpoints API
+  title: Tale Platform Model endpoints API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Model endpoints across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -205,13 +209,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/openai/models:
     get:
       tags:
@@ -379,13 +376,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/anthropic/v1/messages:
     post:
       tags:
@@ -579,15 +569,270 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
+  headers:
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
   schemas:
+    OpenAiError:
+      type: object
+      description: A refusal on the OpenAI-compatible model endpoints, in OpenAI’s own error shape — the REST door’s refusals (a missing key, the organization header, the request budget) included. `code` is this API’s stable refusal code.
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - message
+          - type
+          - param
+          - code
+          properties:
+            message:
+              type: string
+              description: What went wrong, in a sentence
+            type:
+              type: string
+              description: 'OpenAI’s error class: `invalid_request_error`, `authentication_error`, `permission_error`, `not_found_error`, `rate_limit_error`, `insufficient_quota` (a spent budget), `server_error`, or the vendor’s own on a relayed refusal'
+            param:
+              type:
+              - string
+              - 'null'
+              description: The request field the refusal is about (`messages.2.content.0`), or null
+            code:
+              type: string
+              enum:
+              - ACTOR_AMBIGUOUS
+              - ACTOR_DISABLED
+              - ACTOR_FORBIDDEN
+              - ACTOR_NOT_FOUND
+              - ACTOR_REBOUND
+              - ACTOR_UNVERIFIED
+              - API_KEY_SCOPE_FORBIDDEN
+              - ATTACHMENT_NOT_FOUND
+              - ATTACHMENT_NOT_OWNED
+              - ATTACHMENT_NOT_STAGED
+              - ATTACHMENT_SIZE_MISMATCH
+              - AUTHOR_UNVERIFIED
+              - AUTOMATION_DELIVERY_SCOPE_MISMATCH
+              - AUTOMATION_HAS_ACTIVE_RUNS
+              - AUTOMATION_INPUT_INVALID
+              - AUTOMATION_NOT_DEPLOYED
+              - AUTOMATION_NOT_FOUND
+              - AUTOMATION_NOT_INSTALLED
+              - AUTOMATION_PROJECT_FORBIDDEN
+              - AUTOMATION_PROJECT_SCOPE_REQUIRED
+              - AUTOMATION_TRIGGER_INVALID
+              - AUTOMATION_VERSION_NOT_DEPLOYED
+              - AUTOMATION_VERSION_UNKNOWN
+              - BLOB_NOT_FOUND
+              - BODY_CHUNK_MALFORMED
+              - BODY_LENGTH_MISMATCH
+              - BODY_TOO_LARGE
+              - BROWSER_SESSION_NOT_FOUND
+              - BUDGET_EXCEEDED
+              - CHAT_MODEL_AMBIGUOUS
+              - CHAT_MODEL_NOT_ON_PROVIDER
+              - CHAT_MODEL_UNKNOWN
+              - CHAT_PROVIDER_UNKNOWN
+              - CHAT_THREAD_ARCHIVED
+              - CHAT_THREAD_NOT_DIRECT
+              - CHAT_TURN_IN_PROGRESS
+              - CHAT_TURN_NOT_RUNNING
+              - CONTACT_AMBIGUOUS
+              - CONTACT_DUPLICATE_EMAIL
+              - CONTACT_DUPLICATE_EXTERNAL_ID
+              - CONTACT_IDENTITY_REQUIRED
+              - CONTACT_NOT_FOUND
+              - CONTACT_STALE
+              - CONVERSATION_CLOSED
+              - CONVERSATION_CONTACT_CONFLICT
+              - CONVERSATION_CONTACT_TRASHED
+              - CONVERSATION_NOT_FOUND
+              - CONVERSATION_SNAPSHOT_CONFLICT
+              - CONVERSATION_SOURCE_NOT_FOUND
+              - DATABASE_UNAVAILABLE
+              - DELIVERY_NOT_FOUND
+              - DELIVERY_RECEIPT_CONFLICT
+              - DELIVERY_RETRY_UNAVAILABLE
+              - DELIVERY_UNACKNOWLEDGED
+              - DOCUMENT_HAS_KNOWLEDGE_ENTRY
+              - DOCUMENT_NOT_FOUND
+              - DOCUMENT_RECORD_FROZEN
+              - DOCUMENT_RECORD_PROTECTED
+              - DOCUMENT_RECORD_REPLACEMENT_REQUIRED
+              - DOCUMENT_STALE
+              - DUPLICATE_PRODUCT_EXTERNAL_ID
+              - DUPLICATE_PRODUCT_NAME
+              - EMBEDDING_CREDENTIAL_REJECTED
+              - EMBEDDING_CREDIT_EXHAUSTED
+              - EMBEDDING_NOT_CONFIGURED
+              - EMBEDDING_UPSTREAM_ERROR
+              - EMPTY_ANSWER
+              - FILE_NOT_FOUND
+              - FILE_SIZE_INVALID
+              - FILE_TOO_LARGE
+              - FOLDER_DEPTH_EXCEEDED
+              - FOLDER_NAME_INVALID
+              - FOLDER_NAME_TAKEN
+              - FOLDER_NOT_ACCESSIBLE
+              - FOLDER_NOT_FOUND
+              - FORBIDDEN_DEPLOYMENT_EDITOR
+              - FORBIDDEN_INSTANCE_ADMIN
+              - HTTP_ERROR
+              - HUMAN_ASK_EXPIRED
+              - HUMAN_ASK_NOT_FOUND
+              - HUMAN_ASK_NOT_PENDING
+              - IDEMPOTENCY_KEY_REUSED
+              - INTEGRATION_NOT_OWNED
+              - INTERNAL_ERROR
+              - INVALID_BODY
+              - INVALID_CURSOR
+              - INVALID_HEADER
+              - INVALID_LIMIT
+              - INVALID_QUERY
+              - INVALID_SESSION
+              - INVALID_SKILL
+              - INVALID_SKILL_SLUG
+              - INVALID_URL
+              - KNOWLEDGE_ENTRY_DUPLICATE
+              - KNOWLEDGE_ENTRY_FORBIDDEN
+              - KNOWLEDGE_ENTRY_NOT_FOUND
+              - KNOWLEDGE_ENTRY_STORE_TIMEOUT
+              - KNOWLEDGE_ENTRY_SUPERSEDED
+              - LEGAL_HOLD_ACTIVE
+              - MENTION_DIRECTORY_UNAVAILABLE
+              - MESSAGE_NOT_FOUND
+              - METHOD_NOT_ALLOWED
+              - MODEL_API_CONCURRENCY_EXCEEDED
+              - MODEL_API_DISABLED
+              - MODEL_API_FORBIDDEN
+              - MODEL_API_GUARDRAIL_BLOCKED
+              - MODEL_API_GUARDRAIL_UNAVAILABLE
+              - MODEL_API_GUARDRAIL_UNSUPPORTED
+              - MODEL_API_MODEL_FORBIDDEN
+              - MODEL_API_MODEL_UNKNOWN
+              - MODEL_API_TEXT_TOO_LARGE
+              - MODEL_API_TOOLS_UNSUPPORTED
+              - MODEL_API_UNAVAILABLE
+              - MODEL_API_UPSTREAM_ERROR
+              - MODEL_API_VENDOR_TOOL_UNSUPPORTED
+              - MODEL_API_VISION_UNSUPPORTED
+              - NOT_FOUND
+              - OBJECT_STORE_UNAVAILABLE
+              - OBJECT_STORE_UNCONFIGURED
+              - ORG_FORBIDDEN
+              - ORG_SLUG_INVALID
+              - ORG_SLUG_REQUIRED
+              - ORIGIN_FORBIDDEN
+              - PRECONDITION_FAILED
+              - PRODUCT_NOT_FOUND
+              - PRODUCT_STALE
+              - PROJECT_AGENT_CONNECTOR_UNKNOWN
+              - PROJECT_AGENT_HARNESS_INVALID
+              - PROJECT_AGENT_LIMIT
+              - PROJECT_AGENT_MANAGED
+              - PROJECT_AGENT_MODEL_INVALID
+              - PROJECT_AGENT_NAME_TAKEN
+              - PROJECT_AGENT_NOT_FOUND
+              - PROJECT_AGENT_PROVIDER_UNKNOWN
+              - PROJECT_AGENT_SECRETS_FORBIDDEN
+              - PROJECT_AGENT_SECRET_UNKNOWN
+              - PROJECT_AGENT_SKILL_UNKNOWN
+              - PROJECT_AGENT_STALE
+              - PROJECT_AGENT_TOOL_UNKNOWN
+              - PROJECT_ARCHIVED
+              - PROJECT_DUPLICATE_EXTERNAL_ID
+              - PROJECT_FORBIDDEN
+              - PROJECT_HAS_BOUND_AUTOMATIONS
+              - PROJECT_HAS_PROTECTED_RECORDS
+              - PROJECT_KEY_INVALID
+              - PROJECT_KEY_TAKEN
+              - PROJECT_LEGAL_HOLD
+              - PROJECT_NOT_FOUND
+              - PROJECT_SHARING_INVALID
+              - PURGE_INCOMPLETE
+              - RATE_LIMITED
+              - RBAC_FORBIDDEN
+              - REQUEST_TIMEOUT
+              - REVIEW_COMPETENCE_REQUIRED
+              - REVIEW_INDEPENDENT_REVIEWER_REQUIRED
+              - ROLE_FORBIDDEN
+              - RUN_ACTIVE
+              - RUN_NOT_FOUND
+              - RUN_QUARANTINED
+              - RUN_QUARANTINE_CHANGED
+              - SETUP_FOLDER_MISSING
+              - SKILL_EXISTS
+              - SKILL_FILE_NOT_FOUND
+              - SKILL_FORBIDDEN
+              - SKILL_MALFORMED
+              - SKILL_NOT_FOUND
+              - SKILL_PUBLISH_FORBIDDEN
+              - SKILL_STALE
+              - SKILL_TEAM_UNKNOWN
+              - STANDARD_AGENT_OFF
+              - STANDARD_AGENT_UNAVAILABLE
+              - TASK_AGENT_REVIEW_REQUIRED
+              - TASK_ARCHIVED
+              - TASK_AUTOMATION_DISABLED
+              - TASK_AUTOMATION_UNAVAILABLE
+              - TASK_EXTERNAL_REF_INVALID
+              - TASK_EXTERNAL_STATUS_STALE
+              - TASK_HAS_LIVE_RUN
+              - TASK_HAS_OPEN_SUBTASKS
+              - TASK_LABEL_UNKNOWN
+              - TASK_NOT_FOUND
+              - TASK_NOT_IN_REVIEW
+              - TASK_REVIEW_POLICY_UNAVAILABLE
+              - TASK_STATUS_CONFLICT
+              - TEAM_ACCESS_DENIED
+              - TEAM_INHERITED_FROM_FOLDER
+              - TEAM_NOT_IN_ORG
+              - THREAD_NOT_FOUND
+              - UNAUTHORIZED
+              - UNSUPPORTED_FILE_TYPE
+              - UPLOAD_FILE_MISMATCH
+              - UPLOAD_INTENT_INVALID
+              - UPLOAD_POLICY_REJECTED
+              - UPSTREAM_UNAVAILABLE
+              - URI_TOO_LONG
+              - WEBSITE_DOMAIN_IMMUTABLE
+              - WEBSITE_DOMAIN_INVALID
+              - WEBSITE_DOMAIN_NOT_CRAWLABLE
+              - WEBSITE_DUPLICATE_DOMAIN
+              - WEBSITE_INVALID_LIST_URL
+              - WEBSITE_NOT_FOUND
+              description: The stable refusal code
     AnthropicError:
       type: object
       description: A refusal on the Anthropic-compatible model endpoint, in Anthropic’s own error shape — the REST door’s refusals included. `error.code` is this API’s stable refusal code, an addition to Anthropic’s shape.
@@ -820,273 +1065,8 @@ components:
         request_id:
           type: string
           description: The request id — the same value as the `request-id` and `X-Request-Id` headers
-    OpenAiError:
-      type: object
-      description: A refusal on the OpenAI-compatible model endpoints, in OpenAI’s own error shape — the REST door’s refusals (a missing key, the organization header, the request budget) included. `code` is this API’s stable refusal code.
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - message
-          - type
-          - param
-          - code
-          properties:
-            message:
-              type: string
-              description: What went wrong, in a sentence
-            type:
-              type: string
-              description: 'OpenAI’s error class: `invalid_request_error`, `authentication_error`, `permission_error`, `not_found_error`, `rate_limit_error`, `insufficient_quota` (a spent budget), `server_error`, or the vendor’s own on a relayed refusal'
-            param:
-              type:
-              - string
-              - 'null'
-              description: The request field the refusal is about (`messages.2.content.0`), or null
-            code:
-              type: string
-              enum:
-              - ACTOR_AMBIGUOUS
-              - ACTOR_DISABLED
-              - ACTOR_FORBIDDEN
-              - ACTOR_NOT_FOUND
-              - ACTOR_REBOUND
-              - ACTOR_UNVERIFIED
-              - API_KEY_SCOPE_FORBIDDEN
-              - ATTACHMENT_NOT_FOUND
-              - ATTACHMENT_NOT_OWNED
-              - ATTACHMENT_NOT_STAGED
-              - ATTACHMENT_SIZE_MISMATCH
-              - AUTHOR_UNVERIFIED
-              - AUTOMATION_DELIVERY_SCOPE_MISMATCH
-              - AUTOMATION_HAS_ACTIVE_RUNS
-              - AUTOMATION_INPUT_INVALID
-              - AUTOMATION_NOT_DEPLOYED
-              - AUTOMATION_NOT_FOUND
-              - AUTOMATION_NOT_INSTALLED
-              - AUTOMATION_PROJECT_FORBIDDEN
-              - AUTOMATION_PROJECT_SCOPE_REQUIRED
-              - AUTOMATION_TRIGGER_INVALID
-              - AUTOMATION_VERSION_NOT_DEPLOYED
-              - AUTOMATION_VERSION_UNKNOWN
-              - BLOB_NOT_FOUND
-              - BODY_CHUNK_MALFORMED
-              - BODY_LENGTH_MISMATCH
-              - BODY_TOO_LARGE
-              - BROWSER_SESSION_NOT_FOUND
-              - BUDGET_EXCEEDED
-              - CHAT_MODEL_AMBIGUOUS
-              - CHAT_MODEL_NOT_ON_PROVIDER
-              - CHAT_MODEL_UNKNOWN
-              - CHAT_PROVIDER_UNKNOWN
-              - CHAT_THREAD_ARCHIVED
-              - CHAT_THREAD_NOT_DIRECT
-              - CHAT_TURN_IN_PROGRESS
-              - CHAT_TURN_NOT_RUNNING
-              - CONTACT_AMBIGUOUS
-              - CONTACT_DUPLICATE_EMAIL
-              - CONTACT_DUPLICATE_EXTERNAL_ID
-              - CONTACT_IDENTITY_REQUIRED
-              - CONTACT_NOT_FOUND
-              - CONTACT_STALE
-              - CONVERSATION_CLOSED
-              - CONVERSATION_CONTACT_CONFLICT
-              - CONVERSATION_CONTACT_TRASHED
-              - CONVERSATION_NOT_FOUND
-              - CONVERSATION_SNAPSHOT_CONFLICT
-              - CONVERSATION_SOURCE_NOT_FOUND
-              - DATABASE_UNAVAILABLE
-              - DELIVERY_NOT_FOUND
-              - DELIVERY_RECEIPT_CONFLICT
-              - DELIVERY_RETRY_UNAVAILABLE
-              - DELIVERY_UNACKNOWLEDGED
-              - DOCUMENT_HAS_KNOWLEDGE_ENTRY
-              - DOCUMENT_NOT_FOUND
-              - DOCUMENT_RECORD_FROZEN
-              - DOCUMENT_RECORD_PROTECTED
-              - DOCUMENT_RECORD_REPLACEMENT_REQUIRED
-              - DOCUMENT_STALE
-              - DUPLICATE_PRODUCT_EXTERNAL_ID
-              - DUPLICATE_PRODUCT_NAME
-              - EMBEDDING_CREDENTIAL_REJECTED
-              - EMBEDDING_CREDIT_EXHAUSTED
-              - EMBEDDING_NOT_CONFIGURED
-              - EMBEDDING_UPSTREAM_ERROR
-              - EMPTY_ANSWER
-              - FILE_NOT_FOUND
-              - FILE_SIZE_INVALID
-              - FILE_TOO_LARGE
-              - FOLDER_DEPTH_EXCEEDED
-              - FOLDER_NAME_INVALID
-              - FOLDER_NAME_TAKEN
-              - FOLDER_NOT_ACCESSIBLE
-              - FOLDER_NOT_FOUND
-              - FORBIDDEN_DEPLOYMENT_EDITOR
-              - FORBIDDEN_INSTANCE_ADMIN
-              - HTTP_ERROR
-              - HUMAN_ASK_EXPIRED
-              - HUMAN_ASK_NOT_FOUND
-              - HUMAN_ASK_NOT_PENDING
-              - IDEMPOTENCY_KEY_REUSED
-              - INTEGRATION_NOT_OWNED
-              - INTERNAL_ERROR
-              - INVALID_BODY
-              - INVALID_CURSOR
-              - INVALID_HEADER
-              - INVALID_LIMIT
-              - INVALID_QUERY
-              - INVALID_SESSION
-              - INVALID_SKILL
-              - INVALID_SKILL_SLUG
-              - INVALID_URL
-              - KNOWLEDGE_ENTRY_DUPLICATE
-              - KNOWLEDGE_ENTRY_FORBIDDEN
-              - KNOWLEDGE_ENTRY_NOT_FOUND
-              - KNOWLEDGE_ENTRY_STORE_TIMEOUT
-              - KNOWLEDGE_ENTRY_SUPERSEDED
-              - LEGAL_HOLD_ACTIVE
-              - MENTION_DIRECTORY_UNAVAILABLE
-              - MESSAGE_NOT_FOUND
-              - METHOD_NOT_ALLOWED
-              - MODEL_API_CONCURRENCY_EXCEEDED
-              - MODEL_API_DISABLED
-              - MODEL_API_FORBIDDEN
-              - MODEL_API_GUARDRAIL_BLOCKED
-              - MODEL_API_GUARDRAIL_UNAVAILABLE
-              - MODEL_API_GUARDRAIL_UNSUPPORTED
-              - MODEL_API_MODEL_FORBIDDEN
-              - MODEL_API_MODEL_UNKNOWN
-              - MODEL_API_TEXT_TOO_LARGE
-              - MODEL_API_TOOLS_UNSUPPORTED
-              - MODEL_API_UNAVAILABLE
-              - MODEL_API_UPSTREAM_ERROR
-              - MODEL_API_VENDOR_TOOL_UNSUPPORTED
-              - MODEL_API_VISION_UNSUPPORTED
-              - NOT_FOUND
-              - OBJECT_STORE_UNAVAILABLE
-              - OBJECT_STORE_UNCONFIGURED
-              - ORG_FORBIDDEN
-              - ORG_SLUG_INVALID
-              - ORG_SLUG_REQUIRED
-              - ORIGIN_FORBIDDEN
-              - PRECONDITION_FAILED
-              - PRODUCT_NOT_FOUND
-              - PRODUCT_STALE
-              - PROJECT_AGENT_CONNECTOR_UNKNOWN
-              - PROJECT_AGENT_HARNESS_INVALID
-              - PROJECT_AGENT_LIMIT
-              - PROJECT_AGENT_MANAGED
-              - PROJECT_AGENT_MODEL_INVALID
-              - PROJECT_AGENT_NAME_TAKEN
-              - PROJECT_AGENT_NOT_FOUND
-              - PROJECT_AGENT_PROVIDER_UNKNOWN
-              - PROJECT_AGENT_SECRETS_FORBIDDEN
-              - PROJECT_AGENT_SECRET_UNKNOWN
-              - PROJECT_AGENT_SKILL_UNKNOWN
-              - PROJECT_AGENT_STALE
-              - PROJECT_AGENT_TOOL_UNKNOWN
-              - PROJECT_ARCHIVED
-              - PROJECT_DUPLICATE_EXTERNAL_ID
-              - PROJECT_FORBIDDEN
-              - PROJECT_HAS_BOUND_AUTOMATIONS
-              - PROJECT_HAS_PROTECTED_RECORDS
-              - PROJECT_KEY_INVALID
-              - PROJECT_KEY_TAKEN
-              - PROJECT_LEGAL_HOLD
-              - PROJECT_NOT_FOUND
-              - PROJECT_SHARING_INVALID
-              - PURGE_INCOMPLETE
-              - RATE_LIMITED
-              - RBAC_FORBIDDEN
-              - REQUEST_TIMEOUT
-              - REVIEW_COMPETENCE_REQUIRED
-              - REVIEW_INDEPENDENT_REVIEWER_REQUIRED
-              - ROLE_FORBIDDEN
-              - RUN_ACTIVE
-              - RUN_NOT_FOUND
-              - RUN_QUARANTINED
-              - RUN_QUARANTINE_CHANGED
-              - SETUP_FOLDER_MISSING
-              - SKILL_EXISTS
-              - SKILL_FILE_NOT_FOUND
-              - SKILL_FORBIDDEN
-              - SKILL_MALFORMED
-              - SKILL_NOT_FOUND
-              - SKILL_PUBLISH_FORBIDDEN
-              - SKILL_STALE
-              - SKILL_TEAM_UNKNOWN
-              - STANDARD_AGENT_OFF
-              - STANDARD_AGENT_UNAVAILABLE
-              - TASK_AGENT_REVIEW_REQUIRED
-              - TASK_ARCHIVED
-              - TASK_AUTOMATION_DISABLED
-              - TASK_AUTOMATION_UNAVAILABLE
-              - TASK_EXTERNAL_REF_INVALID
-              - TASK_EXTERNAL_STATUS_STALE
-              - TASK_HAS_LIVE_RUN
-              - TASK_HAS_OPEN_SUBTASKS
-              - TASK_LABEL_UNKNOWN
-              - TASK_NOT_FOUND
-              - TASK_NOT_IN_REVIEW
-              - TASK_REVIEW_POLICY_UNAVAILABLE
-              - TASK_STATUS_CONFLICT
-              - TEAM_ACCESS_DENIED
-              - TEAM_INHERITED_FROM_FOLDER
-              - TEAM_NOT_IN_ORG
-              - THREAD_NOT_FOUND
-              - UNAUTHORIZED
-              - UNSUPPORTED_FILE_TYPE
-              - UPLOAD_FILE_MISMATCH
-              - UPLOAD_INTENT_INVALID
-              - UPLOAD_POLICY_REJECTED
-              - UPSTREAM_UNAVAILABLE
-              - URI_TOO_LONG
-              - WEBSITE_DOMAIN_IMMUTABLE
-              - WEBSITE_DOMAIN_INVALID
-              - WEBSITE_DOMAIN_NOT_CRAWLABLE
-              - WEBSITE_DUPLICATE_DOMAIN
-              - WEBSITE_INVALID_LIST_URL
-              - WEBSITE_NOT_FOUND
-              description: The stable refusal code
-  headers:
-    Allow:
-      description: The methods this path serves, comma-separated
-      schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
-      schema:
-        type: string
-        example: 3.27.0
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
-      schema:
-        type: string
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
-      schema:
-        type: string
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
-      schema:
-        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

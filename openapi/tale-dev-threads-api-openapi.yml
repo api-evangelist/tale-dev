@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Threads API
+  title: Tale Platform Threads API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Threads across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -190,13 +194,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/threads:
     get:
       tags:
@@ -534,13 +531,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/threads/{id}:
     get:
       tags:
@@ -1010,13 +1000,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/threads/{id}/messages:
     get:
       tags:
@@ -1450,13 +1433,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/threads/{id}/messages/{messageId}:
     get:
       tags:
@@ -1615,13 +1591,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/threads/{id}/generation:
     get:
       tags:
@@ -1986,13 +1955,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/threads:
     get:
       tags:
@@ -2342,13 +2304,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/threads/{threadId}:
     get:
       tags:
@@ -2836,13 +2791,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/threads/{threadId}/messages:
     get:
       tags:
@@ -3288,13 +3236,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/threads/{threadId}/messages/{messageId}:
     get:
       tags:
@@ -3459,13 +3400,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/threads/{threadId}/generation:
     get:
       tags:
@@ -3842,87 +3776,25 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
   schemas:
-    ReasoningPart:
+    ToolCallPart:
       type: object
       required:
       - type
-      - text
-      description: The model’s reasoning ahead of its reply — display-only, never replayed to the model; it may quote the assistant’s own instructions verbatim, so it is not safe to render as the answer.
+      - callId
+      - capabilityId
+      - input
       properties:
         type:
           type: string
           enum:
-          - reasoning
-        text:
+          - tool-call
+        callId:
           type: string
-    MessagePart:
-      description: 'One ordered piece of a message, discriminated by `type`: the `mapping` names the schema each kind validates against (`TextPart` … `ApprovalPart`), so a discriminator-honouring validator resolves every part. The kinds listed are the vocabulary as of this version; the set is additive, so a client renders a kind it does not know as opaque.'
-      discriminator:
-        propertyName: type
-        mapping:
-          text: '#/components/schemas/TextPart'
-          reasoning: '#/components/schemas/ReasoningPart'
-          attachment: '#/components/schemas/AttachmentPart'
-          tool-call: '#/components/schemas/ToolCallPart'
-          tool-result: '#/components/schemas/ToolResultPart'
-          approval: '#/components/schemas/ApprovalPart'
-      oneOf:
-      - $ref: '#/components/schemas/TextPart'
-      - $ref: '#/components/schemas/ReasoningPart'
-      - $ref: '#/components/schemas/AttachmentPart'
-      - $ref: '#/components/schemas/ToolCallPart'
-      - $ref: '#/components/schemas/ToolResultPart'
-      - $ref: '#/components/schemas/ApprovalPart'
-    Thread:
-      type: object
-      required:
-      - id
-      - kind
-      - archived
-      - createdAt
-      - updatedAt
-      - generating
-      properties:
-        id:
+        capabilityId:
           type: string
-        title:
-          type: string
-        kind:
-          type: string
-        harness:
-          type: string
-          description: The sandbox harness a thread the app started runs on (`claude-code`, …) — present only on such a thread; the direct threads this surface creates never carry it
-        projectId:
-          type: string
-          description: Present only for a thread returned through its project URL
-        archived:
-          type: boolean
-        archivedAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms of the archive — present on an archived thread whose archive the deployment recorded; `updatedAt` does not move on archive or restore
-        isShared:
-          type: boolean
-          description: Whether the owner’s share link for the thread is live — present once the thread has been shared or unshared in the app, absent on one that never was
-        generating:
-          type: boolean
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms of the last message activity — archiving, restoring and renaming leave it untouched
+        input: {}
     AttachmentPart:
       type: object
       required:
@@ -3947,131 +3819,88 @@ components:
         text:
           type: string
           description: Extracted text, when any
-    Message:
+    ChatModel:
       type: object
       required:
       - id
-      - role
-      - parts
-      - sequence
-      - status
-      - createdAt
+      - label
+      - providerSlug
+      - providerLabel
+      - contextWindow
+      - capabilities
+      - tags
       properties:
         id:
           type: string
-        role:
+          description: Send as `model`
+        label:
           type: string
-          enum:
-          - user
-          - assistant
-        parts:
-          type: array
-          items:
-            $ref: '#/components/schemas/MessagePart'
-          description: The message parts, in order
-        sequence:
-          type: integer
-          description: The paging key
-        status:
-          type: string
-          enum:
-          - pending
-          - complete
-          - failed
-          - cancelled
-          description: '`pending` is the placeholder a running turn fills in (the row GET …/generation names as messageId); `complete` is a settled reply — a reply the output cap cut short included, so read `finishReason` for that; `cancelled` is a turn stopped through DELETE …/generation — `parts` and `usage` hold what had streamed; `failed` carries `error`, and `usage` when the turn had consumed any.'
-        finishReason:
-          type: string
-          enum:
-          - stop
-          - length
-          - tool-calls
-          - content-filter
-          - cancelled
-          - other
-          description: 'Why the turn stopped, on a settled assistant message, in one vocabulary over every provider: `stop` (a natural end), `length` (the `maxOutputTokens` cap or the model’s own ceiling cut a round of this reply short — the final text, or, in a tool-calling turn, the tool calls of an earlier round: every call of that round is withheld, its tool-result reads `status: "invalid_args"` — the message saying whether its arguments were cut or complete — and the final text may be whole; the status still reads `complete`), `tool-calls` (the final round ended on tool calls), `content-filter` (the provider’s or the platform’s filter), `cancelled` (stopped through DELETE …/generation), `other` (a reason the provider named that has no bucket here). Absent when the provider reported none.'
-        model:
-          type: string
+          description: A display name for a picker (`DeepSeek V4 Flash`, `GLM 5v Turbo`) — derived from the id where the catalog publishes none; never send it as `model`
         providerSlug:
           type: string
-        blockedReason:
+          description: Send as `providerSlug` when the same id is listed under more than one provider
+        providerLabel:
           type: string
-        error:
-          type: string
-          description: Why a failed turn produced no reply
-        errorCode:
-          type: string
-          enum:
-          - missing_api_key
-          - credit_exhausted
-          - model_not_entitled
-          - auth_error
-          - model_not_found
-          - unsupported_parameter
-          - output_cap_too_high
-          - token_limit
-          - rate_limited
-          - content_filter
-          - context_length
-          - tool_failure
-          - provider_unreachable
-          - provider_error
-          - thread_busy
-          - budget_exceeded
-          - generic
-          description: Stable chat error classification when available. `credit_exhausted` and `model_not_entitled` mean the provider account, not the request; neither is `rate_limited`. `budget_exceeded` means a budget cap that binds the key holder was reached after the send was accepted, so the turn never ran; a send made once a cap is reached is refused up front with 429 `BUDGET_EXCEEDED`.
-        usage:
+        contextWindow:
+          type: integer
+          minimum: 1
+          description: Total context window in tokens
+        maxOutputTokens:
+          type: integer
+          minimum: 1
+          description: The largest reply the model produces, in tokens. Absent when the catalog declares no ceiling — then no `maxOutputTokens` check applies to a send.
+        capabilities:
           type: object
+          required:
+          - tools
+          - vision
+          - reasoning
           additionalProperties: false
-          description: The token counters the finished turn recorded and the catalog cost estimate stamped beside them; absent until the turn settles. A failed turn carries what it consumed — its finished model rounds and, if the provider had already accepted the request, the round that failed; a round the provider refused (an HTTP error status, or a refusal such as a rate limit reported before any answer or positive reported usage) adds nothing, so a turn refused on its first round carries none. Counts are the provider’s own unless `estimated` is present.
           properties:
-            inputTokens:
-              type: integer
-              description: Prompt tokens — the assistant’s instructions and tool schemas included
-            outputTokens:
-              type: integer
-              description: Reply tokens, the reasoning share included
-            cachedInputTokens:
-              type: integer
-              description: The share of `inputTokens` the provider served from its prompt cache
-            reasoningTokens:
-              type: integer
-              description: The share of `outputTokens` spent thinking before the reply — absent when the provider reported no count (a `0` is a reported zero)
-            costEstimateCents:
+            tools:
+              type: boolean
+              description: Accepts function tools
+            vision:
+              type: boolean
+              description: 'Reads images — a fact about the model, not an input this surface offers: the REST send is text only (`content`), so `vision` matters here for a thread the app continues with image attachments, whose `attachment` parts the model then sees. An image pasted into `content` as a data URI is read as text.'
+            reasoning:
+              type: boolean
+              description: Has a controllable reasoning depth
+        pricing:
+          type: object
+          required:
+          - inputCentsPerMillion
+          - outputCentsPerMillion
+          additionalProperties: false
+          description: The catalog price in US cents per million tokens; absent when the source publishes none
+          properties:
+            inputCentsPerMillion:
               type: number
               minimum: 0
-              description: The turn’s cost in US cents (fractional) from the catalog price the organization ledger also books — the same figure as the ledger; absent when the catalog publishes no price for the model. Cached input is priced at the input rate, so on a cached turn the figure is an upper bound; estimated when the provider’s count was lost (`estimated`).
-            estimated:
-              type: boolean
-              enum:
-              - true
-              description: Present when the counts are the platform’s own estimate — the provider’s usage frame was lost (a cancelled turn, or one that failed mid-stream, typically) or never sent — so the cost is an estimate too
-            stepLimitHit:
-              type: boolean
-              enum:
-              - true
-              description: Present when the tool loop spent its whole round budget and the final round had tools withheld — the answer may have been forced
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms — when the row was created (for an assistant row, when its turn started)
-    ToolCallPart:
+            outputCentsPerMillion:
+              type: number
+              minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+          description: The catalog’s capability tags (`chat`, `vision`, …) — an open, additive vocabulary describing the model, like `capabilities`; `vision` does not add an image input to the text-only REST send
+        default:
+          type: boolean
+          description: Present and true on the organization’s default pick for this key holder, when one is configured and accessible
+    ReasoningPart:
       type: object
       required:
       - type
-      - callId
-      - capabilityId
-      - input
+      - text
+      description: The model’s reasoning ahead of its reply — display-only, never replayed to the model; it may quote the assistant’s own instructions verbatim, so it is not safe to render as the answer.
       properties:
         type:
           type: string
           enum:
-          - tool-call
-        callId:
+          - reasoning
+        text:
           type: string
-        capabilityId:
-          type: string
-        input: {}
     Error:
       type: object
       required:
@@ -4370,18 +4199,85 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    TextPart:
+    ApprovalPart:
       type: object
       required:
       - type
-      - text
+      - approvalId
+      - question
       properties:
         type:
           type: string
           enum:
-          - text
-        text:
+          - approval
+        approvalId:
           type: string
+        question:
+          type: string
+        decision:
+          type: string
+          enum:
+          - approved
+          - rejected
+    Thread:
+      type: object
+      required:
+      - id
+      - kind
+      - archived
+      - createdAt
+      - updatedAt
+      - generating
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        kind:
+          type: string
+        harness:
+          type: string
+          description: The sandbox harness a thread the app started runs on (`claude-code`, …) — present only on such a thread; the direct threads this surface creates never carry it
+        projectId:
+          type: string
+          description: Present only for a thread returned through its project URL
+        archived:
+          type: boolean
+        archivedAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms of the archive — present on an archived thread whose archive the deployment recorded; `updatedAt` does not move on archive or restore
+        isShared:
+          type: boolean
+          description: Whether the owner’s share link for the thread is live — present once the thread has been shared or unshared in the app, absent on one that never was
+        generating:
+          type: boolean
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms of the last message activity — archiving, restoring and renaming leave it untouched
+    MessagePart:
+      description: 'One ordered piece of a message, discriminated by `type`: the `mapping` names the schema each kind validates against (`TextPart` … `ApprovalPart`), so a discriminator-honouring validator resolves every part. The kinds listed are the vocabulary as of this version; the set is additive, so a client renders a kind it does not know as opaque.'
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/TextPart'
+          reasoning: '#/components/schemas/ReasoningPart'
+          attachment: '#/components/schemas/AttachmentPart'
+          tool-call: '#/components/schemas/ToolCallPart'
+          tool-result: '#/components/schemas/ToolResultPart'
+          approval: '#/components/schemas/ApprovalPart'
+      oneOf:
+      - $ref: '#/components/schemas/TextPart'
+      - $ref: '#/components/schemas/ReasoningPart'
+      - $ref: '#/components/schemas/AttachmentPart'
+      - $ref: '#/components/schemas/ToolCallPart'
+      - $ref: '#/components/schemas/ToolResultPart'
+      - $ref: '#/components/schemas/ApprovalPart'
     ToolResultPart:
       type: object
       required:
@@ -4403,102 +4299,134 @@ components:
         structured:
           type: boolean
           description: False when the capability declares no output schema
-    ChatModel:
+    Message:
       type: object
       required:
       - id
-      - label
-      - providerSlug
-      - providerLabel
-      - contextWindow
-      - capabilities
-      - tags
+      - role
+      - parts
+      - sequence
+      - status
+      - createdAt
       properties:
         id:
           type: string
-          description: Send as `model`
-        label:
+        role:
           type: string
-          description: A display name for a picker (`DeepSeek V4 Flash`, `GLM 5v Turbo`) — derived from the id where the catalog publishes none; never send it as `model`
-        providerSlug:
-          type: string
-          description: Send as `providerSlug` when the same id is listed under more than one provider
-        providerLabel:
-          type: string
-        contextWindow:
-          type: integer
-          minimum: 1
-          description: Total context window in tokens
-        maxOutputTokens:
-          type: integer
-          minimum: 1
-          description: The largest reply the model produces, in tokens. Absent when the catalog declares no ceiling — then no `maxOutputTokens` check applies to a send.
-        capabilities:
-          type: object
-          required:
-          - tools
-          - vision
-          - reasoning
-          additionalProperties: false
-          properties:
-            tools:
-              type: boolean
-              description: Accepts function tools
-            vision:
-              type: boolean
-              description: 'Reads images — a fact about the model, not an input this surface offers: the REST send is text only (`content`), so `vision` matters here for a thread the app continues with image attachments, whose `attachment` parts the model then sees. An image pasted into `content` as a data URI is read as text.'
-            reasoning:
-              type: boolean
-              description: Has a controllable reasoning depth
-        pricing:
-          type: object
-          required:
-          - inputCentsPerMillion
-          - outputCentsPerMillion
-          additionalProperties: false
-          description: The catalog price in US cents per million tokens; absent when the source publishes none
-          properties:
-            inputCentsPerMillion:
-              type: number
-              minimum: 0
-            outputCentsPerMillion:
-              type: number
-              minimum: 0
-        tags:
+          enum:
+          - user
+          - assistant
+        parts:
           type: array
           items:
-            type: string
-          description: The catalog’s capability tags (`chat`, `vision`, …) — an open, additive vocabulary describing the model, like `capabilities`; `vision` does not add an image input to the text-only REST send
-        default:
-          type: boolean
-          description: Present and true on the organization’s default pick for this key holder, when one is configured and accessible
-    ApprovalPart:
+            $ref: '#/components/schemas/MessagePart'
+          description: The message parts, in order
+        sequence:
+          type: integer
+          description: The paging key
+        status:
+          type: string
+          enum:
+          - pending
+          - complete
+          - failed
+          - cancelled
+          description: '`pending` is the placeholder a running turn fills in (the row GET …/generation names as messageId); `complete` is a settled reply — a reply the output cap cut short included, so read `finishReason` for that; `cancelled` is a turn stopped through DELETE …/generation — `parts` and `usage` hold what had streamed; `failed` carries `error`, and `usage` when the turn had consumed any.'
+        finishReason:
+          type: string
+          enum:
+          - stop
+          - length
+          - tool-calls
+          - content-filter
+          - cancelled
+          - other
+          description: 'Why the turn stopped, on a settled assistant message, in one vocabulary over every provider: `stop` (a natural end), `length` (the `maxOutputTokens` cap or the model’s own ceiling cut a round of this reply short — the final text, or, in a tool-calling turn, the tool calls of an earlier round: every call of that round is withheld, its tool-result reads `status: "invalid_args"` — the message saying whether its arguments were cut or complete — and the final text may be whole; the status still reads `complete`), `tool-calls` (the final round ended on tool calls), `content-filter` (the provider’s or the platform’s filter), `cancelled` (stopped through DELETE …/generation), `other` (a reason the provider named that has no bucket here). Absent when the provider reported none.'
+        model:
+          type: string
+        providerSlug:
+          type: string
+        blockedReason:
+          type: string
+        error:
+          type: string
+          description: Why a failed turn produced no reply
+        errorCode:
+          type: string
+          enum:
+          - missing_api_key
+          - credit_exhausted
+          - model_not_entitled
+          - auth_error
+          - model_not_found
+          - unsupported_parameter
+          - output_cap_too_high
+          - token_limit
+          - rate_limited
+          - content_filter
+          - context_length
+          - tool_failure
+          - provider_unreachable
+          - provider_error
+          - thread_busy
+          - budget_exceeded
+          - generic
+          description: Stable chat error classification when available. `credit_exhausted` and `model_not_entitled` mean the provider account, not the request; neither is `rate_limited`. `budget_exceeded` means a budget cap that binds the key holder was reached after the send was accepted, so the turn never ran; a send made once a cap is reached is refused up front with 429 `BUDGET_EXCEEDED`.
+        usage:
+          type: object
+          additionalProperties: false
+          description: The token counters the finished turn recorded and the catalog cost estimate stamped beside them; absent until the turn settles. A failed turn carries what it consumed — its finished model rounds and, if the provider had already accepted the request, the round that failed; a round the provider refused (an HTTP error status, or a refusal such as a rate limit reported before any answer or positive reported usage) adds nothing, so a turn refused on its first round carries none. Counts are the provider’s own unless `estimated` is present.
+          properties:
+            inputTokens:
+              type: integer
+              description: Prompt tokens — the assistant’s instructions and tool schemas included
+            outputTokens:
+              type: integer
+              description: Reply tokens, the reasoning share included
+            cachedInputTokens:
+              type: integer
+              description: The share of `inputTokens` the provider served from its prompt cache
+            reasoningTokens:
+              type: integer
+              description: The share of `outputTokens` spent thinking before the reply — absent when the provider reported no count (a `0` is a reported zero)
+            costEstimateCents:
+              type: number
+              minimum: 0
+              description: The turn’s cost in US cents (fractional) from the catalog price the organization ledger also books — the same figure as the ledger; absent when the catalog publishes no price for the model. Cached input is priced at the input rate, so on a cached turn the figure is an upper bound; estimated when the provider’s count was lost (`estimated`).
+            estimated:
+              type: boolean
+              enum:
+              - true
+              description: Present when the counts are the platform’s own estimate — the provider’s usage frame was lost (a cancelled turn, or one that failed mid-stream, typically) or never sent — so the cost is an estimate too
+            stepLimitHit:
+              type: boolean
+              enum:
+              - true
+              description: Present when the tool loop spent its whole round budget and the final round had tools withheld — the answer may have been forced
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms — when the row was created (for an assistant row, when its turn started)
+    TextPart:
       type: object
       required:
       - type
-      - approvalId
-      - question
+      - text
       properties:
         type:
           type: string
           enum:
-          - approval
-        approvalId:
+          - text
+        text:
           type: string
-        question:
-          type: string
-        decision:
-          type: string
-          enum:
-          - approved
-          - rejected
   headers:
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
       schema:
         type: string
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+        example: 3.27.0
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
       schema:
         type: string
     Allow:
@@ -4511,28 +4439,24 @@ components:
       schema:
         type: integer
         minimum: 1
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
       schema:
         type: string
     ETag:
       description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
       schema:
         type: string
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
       schema:
         type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
       schema:
         type: string
-        example: 3.27.0
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

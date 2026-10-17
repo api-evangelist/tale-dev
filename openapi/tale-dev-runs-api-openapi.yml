@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Runs API
+  title: Tale Platform Runs API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Runs across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -207,13 +211,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs:
     get:
       tags:
@@ -408,13 +405,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/runs/{runId}:
     get:
       tags:
@@ -718,13 +708,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/runs/{runId}/ask:
     get:
       tags:
@@ -883,13 +866,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/runs/{runId}/asks/{askId}:
     post:
       tags:
@@ -1098,13 +1074,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/runs/{runId}/legacy-quarantine:
     post:
       tags:
@@ -1286,13 +1255,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/runs/{runId}/cancel:
     post:
       tags:
@@ -1473,13 +1435,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs/{runId}:
     get:
       tags:
@@ -1795,13 +1750,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs/{runId}/ask:
     get:
       tags:
@@ -1966,13 +1914,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs/{runId}/asks/{askId}:
     post:
       tags:
@@ -2187,13 +2128,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs/{runId}/legacy-quarantine:
     post:
       tags:
@@ -2381,13 +2315,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/runs/{runId}/cancel:
     post:
       tags:
@@ -2574,15 +2501,277 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
   schemas:
+    Actor:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      description: 'The verified member a machine caller acts FOR when it relays a person’s own gesture — named by e-mail, never by an id the caller made up. The door resolves the address against the organization’s members with the notification export’s rule: exactly one active, verified membership. Naming an actor at all needs `capabilities.actAs` from `/me`.'
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: The member’s e-mail address, compared without regard to case; it must be verified in Tale (403 `ACTOR_UNVERIFIED` otherwise), belong to exactly one active member of the organization (404 `ACTOR_NOT_FOUND`, 409 `ACTOR_AMBIGUOUS`, 403 `ACTOR_DISABLED`) and have access to the project the door acts in (403 `ACTOR_FORBIDDEN`)
+        userId:
+          type: string
+          maxLength: 128
+          description: 'The member’s id an earlier answer returned as `actorUserId`. Pin it: an address that has since moved to another account then answers 409 `ACTOR_REBOUND` instead of acting as its new holder'
+    LegacyRunQuarantine:
+      type: object
+      additionalProperties: false
+      description: A legacy execution whose external effects or termination cannot be proven. Present on held runs. A recorded stop request does not resolve the hold or establish that work stopped.
+      required:
+      - reason
+      - observedAt
+      - claimEpoch
+      - priorStatus
+      - resolution
+      properties:
+        reason:
+          type: string
+          enum:
+          - legacy_execution_unproven
+        observedAt:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        claimEpoch:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        priorStatus:
+          type: string
+          enum:
+          - queued
+          - running
+          - waiting
+        resolution:
+          type:
+          - object
+          - 'null'
+          additionalProperties: false
+          required:
+          - action
+          - actor
+          - at
+          properties:
+            action:
+              type: string
+              enum:
+              - stop
+            actor:
+              type: string
+              minLength: 1
+              maxLength: 200
+            at:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+    Run:
+      type: object
+      description: 'A run in full — the single read: identity, status, input, output, trace, effects, and per-node checkpoints. Listings answer `RunSummary` rows.'
+      required:
+      - id
+      - organizationId
+      - name
+      - version
+      - status
+      - mode
+      - startedBy
+      - startedAt
+      properties:
+        id:
+          type: string
+          description: The run id (`runId` at start)
+        organizationId:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+        projectId:
+          type:
+          - string
+          - 'null'
+          description: URL project for a project run; null for an organization run
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - waiting
+          - quarantined
+          - success
+          - failed
+          - cancelled
+        mode:
+          type: string
+          enum:
+          - mock
+          - live
+        startedBy:
+          type: string
+          description: 'What started the run — one of four forms: `api-key:<userId>` (a start through this API or the MCP endpoint), `user:<userId>` (a start from the product), `trigger:<triggerId>` (a schedule, webhook or event — the id the trigger read answers), or a bare user id on runs the in-product builder recorded before it prefixed them. Split on the first `:`; treat a value without one as a user id.'
+        startedVia:
+          type: string
+          enum:
+          - schedule
+          - webhook
+          - event
+          description: Which kind of trigger started a `trigger:<id>` run — read off the run’s own input (`input.trigger`), so it stays true after the binding changes kind. Absent on a run a person or an API key started.
+        input: {}
+        output: {}
+        checkpoints: {}
+        trace: {}
+        effects: {}
+        detail:
+          type:
+          - string
+          - 'null'
+          description: 'The failure or wait reason; null while the run has none — and null again once a cancel lands (the park it named is over). While `waiting` it names the park: `approval:<approvalId>`, `agent:<nodeId>`, `room:<nodeId>`, `repeat:<nodeId>` or `in_doubt:<nodeId>` — `waitingFor` is the field to branch on; when `failed`, the failure sentence, and `failureCode` the stable cause to branch on — the sentence is not contractual.'
+        failureCode:
+          type:
+          - string
+          - 'null'
+          enum:
+          - node_error
+          - connector_error
+          - llm_output_invalid
+          - approval_rejected
+          - execution_limit
+          - automation_deleted
+          - engine_incompatible
+          - effect_in_doubt
+          - missing_api_key
+          - credit_exhausted
+          - model_not_entitled
+          - auth_error
+          - model_not_found
+          - unsupported_parameter
+          - output_cap_too_high
+          - token_limit
+          - rate_limited
+          - content_filter
+          - context_length
+          - provider_unreachable
+          - provider_error
+          - budget_exceeded
+          - harness_error
+          - turn_crashed
+          - session_gone
+          - start_failed
+          - harvest_failed
+          - resume_failed
+          - deadline
+          - ask_expired
+          - null
+          description: 'Why a `failed` run failed — present only with `status: "failed"`, null otherwise (and null on a failure recorded before this field existed). `node_error` — the node’s own code, template, `forEach` or `output` expression failed, an authoring refusal: the author’s problem; `connector_error` — a connector action refused or failed; `llm_output_invalid` — the model’s reply did not satisfy the node’s `outputSchema`; `approval_rejected`; `execution_limit` — the 100-execution guard; `automation_deleted` — the automation vanished mid-flight; `engine_incompatible` — the run’s saved progress could not be read by this version of Tale, so it was stopped instead of starting over (no step ran twice); `effect_in_doubt` — a person failed the run at a write that may already have reached its service when the run was interrupted. The provider codes the chat surface documents (`credit_exhausted`, `auth_error`, `rate_limited`, `provider_unreachable`, `provider_error`, `model_not_found`, …) — an `llm` node’s provider: the account or the provider, not the request. The agent codes (`harness_error`, `turn_crashed`, `session_gone`, `deadline`, `ask_expired`, `budget_exceeded`, …) — an `agent` node’s turn, after its in-node retries. `budget_exceeded` — a budget limit refused an `agent` node’s turn or an `llm` node’s call, or the turn used up its allowance. Retry on `provider_error`, `provider_unreachable`, `rate_limited`, `turn_crashed`, `session_gone`, `harvest_failed`; alert a person on the rest.'
+        waitingFor:
+          type: string
+          enum:
+          - approval
+          - ask
+          - in_doubt
+          - agent
+          - room
+          - repeat
+          description: 'Present only while `status` is `waiting`: what the run is parked on. `approval` — a person’s decision on a gate; `ask` — a question a person has to answer; `in_doubt` — a write the run was making when its server stopped may or may not have reached its service, and a person must decide how to continue (in the app: run it again, skip it, or fail the run); `agent` — an agent turn still running, no one to page; `room` — an agent turn whose start waits for sandbox room, no one to page; `repeat` — a node polling until its `repeatUntil` condition holds, no one to page.'
+        legacyQuarantine:
+          $ref: '#/components/schemas/LegacyRunQuarantine'
+        resumeCount:
+          type: integer
+          minimum: 0
+          description: 'How often the run moved to another server: a server that was being updated or restarted handed it on, or another one took it over after its own stopped responding. Steps it had finished never run again. `Run` always carries it; `RunSummary` omits it while it is 0.'
+        lastResume:
+          type: object
+          required:
+          - reason
+          - at
+          additionalProperties: false
+          description: Why and when the run last moved to another server; absent while it never did. `shutdown` — its server was being updated or restarted and handed it on; `lease_expired` — its server stopped responding and another one took it over.
+          properties:
+            reason:
+              type: string
+              enum:
+              - shutdown
+              - lease_expired
+            at:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+        stalled:
+          type: boolean
+          description: 'True while a `running` run waits for a server to take it over after its own stopped (the app reads it as “Interrupted — resuming”): nothing is working on it right now, and another server picks it up within about a minute and a half. `Run` always carries it; `RunSummary` carries it only while true.'
+        claimEpoch:
+          type: integer
+          description: 'The stepper’s claim fence: incremented on every claim — each turn, a takeover after a server stopped, or a queue retry; a worker holding an older epoch has its writes refused as stale. Diagnostic — above 1 means the run was claimed more than once.'
+        chainSeq:
+          type: integer
+          description: 'The poll-chain fence of a waiting run: incremented each time the run parks, so a wake-up scheduled for an earlier park is ignored. Diagnostic — how many times the run has parked.'
+        startedAt:
+          type: integer
+          minimum: 0
+          description: 'When the start was accepted — the 202 of a start, a webhook delivery or a trigger occurrence; the run is `queued` from this moment. There is no separate pick-up stamp: `queued` → `running` is the stepper’s first claim, usually within a second, so `finishedAt - startedAt` is wall-clock including any wait for a worker.'
+        finishedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds
+    QuestionSet:
+      type: object
+      required:
+      - questions
+      description: 'A structured question set an agent may ask instead of a plain sentence: up to four questions, each a choice among two to four labelled options; the person may also answer a question in their own words. Render each `question` with its `options`; the answer travels back as one string per question (see the answer door).'
+      properties:
+        intro:
+          type: string
+          maxLength: 600
+          description: The heading above the set — what the agent is trying to settle
+        questions:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items:
+            type: object
+            required:
+            - id
+            - question
+            - options
+            properties:
+              id:
+                type: string
+                maxLength: 64
+              question:
+                type: string
+                maxLength: 300
+              header:
+                type: string
+                maxLength: 12
+                description: A very short label for a progress chip
+              multiSelect:
+                type: boolean
+              options:
+                type: array
+                minItems: 2
+                maxItems: 4
+                items:
+                  type: object
+                  required:
+                  - label
+                  properties:
+                    label:
+                      type: string
+                      maxLength: 80
+                      description: The option’s label — it IS the answer value
+                    description:
+                      type: string
+                      maxLength: 200
+                    recommended:
+                      type: boolean
     RunSummary:
       type: object
       description: One run as a listing reports it — identity, scope, status and timing. The input, output, trace, effects and checkpoints of the full `Run` are inlined only when `include` names them; the single read answers the full row.
@@ -2729,6 +2918,42 @@ components:
           description: With `include=effects`
         checkpoints:
           description: With `include=checkpoints`
+    PendingAsk:
+      type: object
+      required:
+      - askId
+      - runId
+      - nodeId
+      - question
+      - createdAt
+      - expiresAt
+      description: 'The question a run is parked on (`waitingFor: "ask"`): what the agent asked, on which node, and until when an answer still resumes the run. Answer at `POST …/runs/{runId}/asks/{askId}`.'
+      properties:
+        askId:
+          type: string
+        runId:
+          type: string
+        nodeId:
+          type: string
+          description: The agent node that asked
+        question:
+          type: string
+          description: The question as one sentence — always present, and the whole question when `questions` is absent
+        questions:
+          allOf:
+          - $ref: '#/components/schemas/QuestionSet'
+          description: Present when the agent asked a structured set; `question` then summarises it
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        expiresAt:
+          type: integer
+          minimum: 0
+          description: 'When the question stops accepting an answer — the run then fails with `failureCode: "ask_expired"`'
+        taskId:
+          type: string
+          description: The task the run works on, whose timeline mirrors the answer; absent for a run without a task
     LegacyRunStopRequest:
       type: object
       additionalProperties: false
@@ -3052,124 +3277,6 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    LegacyRunQuarantine:
-      type: object
-      additionalProperties: false
-      description: A legacy execution whose external effects or termination cannot be proven. Present on held runs. A recorded stop request does not resolve the hold or establish that work stopped.
-      required:
-      - reason
-      - observedAt
-      - claimEpoch
-      - priorStatus
-      - resolution
-      properties:
-        reason:
-          type: string
-          enum:
-          - legacy_execution_unproven
-        observedAt:
-          type: integer
-          minimum: 0
-          maximum: 9007199254740991
-        claimEpoch:
-          type: integer
-          minimum: 0
-          maximum: 9007199254740991
-        priorStatus:
-          type: string
-          enum:
-          - queued
-          - running
-          - waiting
-        resolution:
-          type:
-          - object
-          - 'null'
-          additionalProperties: false
-          required:
-          - action
-          - actor
-          - at
-          properties:
-            action:
-              type: string
-              enum:
-              - stop
-            actor:
-              type: string
-              minLength: 1
-              maxLength: 200
-            at:
-              type: integer
-              minimum: 0
-              maximum: 9007199254740991
-    QuestionSet:
-      type: object
-      required:
-      - questions
-      description: 'A structured question set an agent may ask instead of a plain sentence: up to four questions, each a choice among two to four labelled options; the person may also answer a question in their own words. Render each `question` with its `options`; the answer travels back as one string per question (see the answer door).'
-      properties:
-        intro:
-          type: string
-          maxLength: 600
-          description: The heading above the set — what the agent is trying to settle
-        questions:
-          type: array
-          minItems: 1
-          maxItems: 4
-          items:
-            type: object
-            required:
-            - id
-            - question
-            - options
-            properties:
-              id:
-                type: string
-                maxLength: 64
-              question:
-                type: string
-                maxLength: 300
-              header:
-                type: string
-                maxLength: 12
-                description: A very short label for a progress chip
-              multiSelect:
-                type: boolean
-              options:
-                type: array
-                minItems: 2
-                maxItems: 4
-                items:
-                  type: object
-                  required:
-                  - label
-                  properties:
-                    label:
-                      type: string
-                      maxLength: 80
-                      description: The option’s label — it IS the answer value
-                    description:
-                      type: string
-                      maxLength: 200
-                    recommended:
-                      type: boolean
-    Actor:
-      type: object
-      additionalProperties: false
-      required:
-      - email
-      description: 'The verified member a machine caller acts FOR when it relays a person’s own gesture — named by e-mail, never by an id the caller made up. The door resolves the address against the organization’s members with the notification export’s rule: exactly one active, verified membership. Naming an actor at all needs `capabilities.actAs` from `/me`.'
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 320
-          description: The member’s e-mail address, compared without regard to case; it must be verified in Tale (403 `ACTOR_UNVERIFIED` otherwise), belong to exactly one active member of the organization (404 `ACTOR_NOT_FOUND`, 409 `ACTOR_AMBIGUOUS`, 403 `ACTOR_DISABLED`) and have access to the project the door acts in (403 `ACTOR_FORBIDDEN`)
-        userId:
-          type: string
-          maxLength: 128
-          description: 'The member’s id an earlier answer returned as `actorUserId`. Pin it: an address that has since moved to another account then answers 409 `ACTOR_REBOUND` instead of acting as its new holder'
     RunProjection:
       type: object
       description: 'A run read with `?fields=`: exactly the keys of `Run` the query named, no others — none is required, since the caller chose them.'
@@ -3313,203 +3420,12 @@ components:
           minimum: 0
           description: Epoch milliseconds
       additionalProperties: false
-    PendingAsk:
-      type: object
-      required:
-      - askId
-      - runId
-      - nodeId
-      - question
-      - createdAt
-      - expiresAt
-      description: 'The question a run is parked on (`waitingFor: "ask"`): what the agent asked, on which node, and until when an answer still resumes the run. Answer at `POST …/runs/{runId}/asks/{askId}`.'
-      properties:
-        askId:
-          type: string
-        runId:
-          type: string
-        nodeId:
-          type: string
-          description: The agent node that asked
-        question:
-          type: string
-          description: The question as one sentence — always present, and the whole question when `questions` is absent
-        questions:
-          allOf:
-          - $ref: '#/components/schemas/QuestionSet'
-          description: Present when the agent asked a structured set; `question` then summarises it
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-        expiresAt:
-          type: integer
-          minimum: 0
-          description: 'When the question stops accepting an answer — the run then fails with `failureCode: "ask_expired"`'
-        taskId:
-          type: string
-          description: The task the run works on, whose timeline mirrors the answer; absent for a run without a task
-    Run:
-      type: object
-      description: 'A run in full — the single read: identity, status, input, output, trace, effects, and per-node checkpoints. Listings answer `RunSummary` rows.'
-      required:
-      - id
-      - organizationId
-      - name
-      - version
-      - status
-      - mode
-      - startedBy
-      - startedAt
-      properties:
-        id:
-          type: string
-          description: The run id (`runId` at start)
-        organizationId:
-          type: string
-        name:
-          type: string
-        version:
-          type: integer
-        projectId:
-          type:
-          - string
-          - 'null'
-          description: URL project for a project run; null for an organization run
-        status:
-          type: string
-          enum:
-          - queued
-          - running
-          - waiting
-          - quarantined
-          - success
-          - failed
-          - cancelled
-        mode:
-          type: string
-          enum:
-          - mock
-          - live
-        startedBy:
-          type: string
-          description: 'What started the run — one of four forms: `api-key:<userId>` (a start through this API or the MCP endpoint), `user:<userId>` (a start from the product), `trigger:<triggerId>` (a schedule, webhook or event — the id the trigger read answers), or a bare user id on runs the in-product builder recorded before it prefixed them. Split on the first `:`; treat a value without one as a user id.'
-        startedVia:
-          type: string
-          enum:
-          - schedule
-          - webhook
-          - event
-          description: Which kind of trigger started a `trigger:<id>` run — read off the run’s own input (`input.trigger`), so it stays true after the binding changes kind. Absent on a run a person or an API key started.
-        input: {}
-        output: {}
-        checkpoints: {}
-        trace: {}
-        effects: {}
-        detail:
-          type:
-          - string
-          - 'null'
-          description: 'The failure or wait reason; null while the run has none — and null again once a cancel lands (the park it named is over). While `waiting` it names the park: `approval:<approvalId>`, `agent:<nodeId>`, `room:<nodeId>`, `repeat:<nodeId>` or `in_doubt:<nodeId>` — `waitingFor` is the field to branch on; when `failed`, the failure sentence, and `failureCode` the stable cause to branch on — the sentence is not contractual.'
-        failureCode:
-          type:
-          - string
-          - 'null'
-          enum:
-          - node_error
-          - connector_error
-          - llm_output_invalid
-          - approval_rejected
-          - execution_limit
-          - automation_deleted
-          - engine_incompatible
-          - effect_in_doubt
-          - missing_api_key
-          - credit_exhausted
-          - model_not_entitled
-          - auth_error
-          - model_not_found
-          - unsupported_parameter
-          - output_cap_too_high
-          - token_limit
-          - rate_limited
-          - content_filter
-          - context_length
-          - provider_unreachable
-          - provider_error
-          - budget_exceeded
-          - harness_error
-          - turn_crashed
-          - session_gone
-          - start_failed
-          - harvest_failed
-          - resume_failed
-          - deadline
-          - ask_expired
-          - null
-          description: 'Why a `failed` run failed — present only with `status: "failed"`, null otherwise (and null on a failure recorded before this field existed). `node_error` — the node’s own code, template, `forEach` or `output` expression failed, an authoring refusal: the author’s problem; `connector_error` — a connector action refused or failed; `llm_output_invalid` — the model’s reply did not satisfy the node’s `outputSchema`; `approval_rejected`; `execution_limit` — the 100-execution guard; `automation_deleted` — the automation vanished mid-flight; `engine_incompatible` — the run’s saved progress could not be read by this version of Tale, so it was stopped instead of starting over (no step ran twice); `effect_in_doubt` — a person failed the run at a write that may already have reached its service when the run was interrupted. The provider codes the chat surface documents (`credit_exhausted`, `auth_error`, `rate_limited`, `provider_unreachable`, `provider_error`, `model_not_found`, …) — an `llm` node’s provider: the account or the provider, not the request. The agent codes (`harness_error`, `turn_crashed`, `session_gone`, `deadline`, `ask_expired`, `budget_exceeded`, …) — an `agent` node’s turn, after its in-node retries. `budget_exceeded` — a budget limit refused an `agent` node’s turn or an `llm` node’s call, or the turn used up its allowance. Retry on `provider_error`, `provider_unreachable`, `rate_limited`, `turn_crashed`, `session_gone`, `harvest_failed`; alert a person on the rest.'
-        waitingFor:
-          type: string
-          enum:
-          - approval
-          - ask
-          - in_doubt
-          - agent
-          - room
-          - repeat
-          description: 'Present only while `status` is `waiting`: what the run is parked on. `approval` — a person’s decision on a gate; `ask` — a question a person has to answer; `in_doubt` — a write the run was making when its server stopped may or may not have reached its service, and a person must decide how to continue (in the app: run it again, skip it, or fail the run); `agent` — an agent turn still running, no one to page; `room` — an agent turn whose start waits for sandbox room, no one to page; `repeat` — a node polling until its `repeatUntil` condition holds, no one to page.'
-        legacyQuarantine:
-          $ref: '#/components/schemas/LegacyRunQuarantine'
-        resumeCount:
-          type: integer
-          minimum: 0
-          description: 'How often the run moved to another server: a server that was being updated or restarted handed it on, or another one took it over after its own stopped responding. Steps it had finished never run again. `Run` always carries it; `RunSummary` omits it while it is 0.'
-        lastResume:
-          type: object
-          required:
-          - reason
-          - at
-          additionalProperties: false
-          description: Why and when the run last moved to another server; absent while it never did. `shutdown` — its server was being updated or restarted and handed it on; `lease_expired` — its server stopped responding and another one took it over.
-          properties:
-            reason:
-              type: string
-              enum:
-              - shutdown
-              - lease_expired
-            at:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-        stalled:
-          type: boolean
-          description: 'True while a `running` run waits for a server to take it over after its own stopped (the app reads it as “Interrupted — resuming”): nothing is working on it right now, and another server picks it up within about a minute and a half. `Run` always carries it; `RunSummary` carries it only while true.'
-        claimEpoch:
-          type: integer
-          description: 'The stepper’s claim fence: incremented on every claim — each turn, a takeover after a server stopped, or a queue retry; a worker holding an older epoch has its writes refused as stale. Diagnostic — above 1 means the run was claimed more than once.'
-        chainSeq:
-          type: integer
-          description: 'The poll-chain fence of a waiting run: incremented each time the run parks, so a wake-up scheduled for an earlier park is ignored. Diagnostic — how many times the run has parked.'
-        startedAt:
-          type: integer
-          minimum: 0
-          description: 'When the start was accepted — the 202 of a start, a webhook delivery or a trigger occurrence; the run is `queued` from this moment. There is no separate pick-up stamp: `queued` → `running` is the stepper’s first claim, usually within a second, so `finishedAt - startedAt` is wall-clock including any wait for a worker.'
-        finishedAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: Epoch milliseconds
   headers:
-    Allow:
-      description: The methods this path serves, comma-separated
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
       schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
+        type: integer
+        minimum: 1
     WWWAuthenticate:
       description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
       schema:
@@ -3519,11 +3435,11 @@ components:
       schema:
         type: string
         example: 3.27.0
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
+    Allow:
+      description: The methods this path serves, comma-separated
       schema:
-        type: integer
-        minimum: 1
+        type: string
+        example: GET, POST, HEAD, OPTIONS
     CacheControl:
       description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
       schema:
@@ -3532,11 +3448,12 @@ components:
       description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
       schema:
         type: string
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

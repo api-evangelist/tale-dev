@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Projects API
+  title: Tale Platform Projects API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Projects across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -413,13 +417,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}:
     get:
       tags:
@@ -946,13 +943,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/folders:
     get:
       tags:
@@ -1311,13 +1301,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/folders/{folderId}:
     get:
       tags:
@@ -1630,13 +1613,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/uploads:
     post:
       tags:
@@ -1805,13 +1781,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/files/{documentId}:
     get:
       tags:
@@ -2124,13 +2093,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/files/{documentId}/content:
     get:
       tags:
@@ -2359,13 +2321,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/files/{documentId}/retry-indexing:
     post:
       tags:
@@ -2509,13 +2464,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/files:
     get:
       tags:
@@ -2931,53 +2879,86 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
+  headers:
+    XTaleApiVersion:
+      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
+      schema:
+        type: string
+        example: 3.27.0
+    ContentDisposition:
+      description: The stored file name as an RFC 6266 attachment (`filename` and `filename*`)
+      schema:
+        type: string
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
+    AcceptRanges:
+      description: '`bytes` — `Range` requests are honoured'
+      schema:
+        type: string
+        example: bytes
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
+      schema:
+        type: integer
+        minimum: 1
+    WWWAuthenticate:
+      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
+      schema:
+        type: string
+    ContentLength:
+      description: The byte length of the response body
+      schema:
+        type: integer
+        minimum: 0
+    ContentRange:
+      description: The satisfied range on a 206 (`bytes <start>-<end>/<size>`); on a 416, `bytes */<size>` names the file’s size
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+      schema:
+        type: string
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
+      schema:
+        type: string
+    XRequestId:
+      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    LastModified:
+      description: When the stored object was last written (HTTP date)
+      schema:
+        type: string
   schemas:
-    Project:
+    RetryIndexingResult:
       type: object
       required:
-      - id
-      - name
-      - teamIds
-      - createdAt
-      - updatedAt
+      - status
+      description: What a retry-indexing request did — the one answer the Hub document door and the project-file door share.
       properties:
-        id:
+        status:
           type: string
-        name:
+          enum:
+          - indexing
+          - skipped
+          description: '`indexing` — the blob was queued (an opt-out lifted); `skipped` — nothing was queued, `reason` says why'
+        reason:
           type: string
-        key:
-          type: string
-          description: Immutable task-identifier prefix
-        description:
-          type: string
-        externalItemId:
-          type: string
-          description: Caller-owned external key, unique per organization — stored NFC-normalized and trimmed
-        archivedAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms — present when the project is archived — the archived marker for lookups and the list
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms — the list is ordered on it, newest first
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch ms of the last change to the project itself
-        teamIds:
-          type: array
-          items:
-            type: string
-          description: 'The audience: the teams that may see the project, by id; empty = organization-wide (every member). Owners and admins see every project regardless.'
+          enum:
+          - content-only
+          - untracked-blob
+          - unsupported
+          - in-progress
+          description: 'Why indexing was skipped; absent when `status` is `indexing`. `content-only`: inline text never enters the search corpus (a Hub document without a file — never a project file); `untracked-blob`: the platform does not track the blob; `unsupported`: terminal — the platform cannot index these bytes and a retry reproduces the answer; the row’s `indexing.errorCode` names the cause (`unsupported_type`, `image_no_vision`, `empty`, `not_text`, `malformed`); `in-progress`: a fresh index job is already queued or running — poll `indexing` instead.'
     ProjectUploadHandoff:
       type: object
       required:
@@ -3008,26 +2989,6 @@ components:
           type: integer
           minimum: 0
           description: Epoch ms; the intent AND the signed `url` both die of old age after this (30 minutes from the mint)
-    RetryIndexingResult:
-      type: object
-      required:
-      - status
-      description: What a retry-indexing request did — the one answer the Hub document door and the project-file door share.
-      properties:
-        status:
-          type: string
-          enum:
-          - indexing
-          - skipped
-          description: '`indexing` — the blob was queued (an opt-out lifted); `skipped` — nothing was queued, `reason` says why'
-        reason:
-          type: string
-          enum:
-          - content-only
-          - untracked-blob
-          - unsupported
-          - in-progress
-          description: 'Why indexing was skipped; absent when `status` is `indexing`. `content-only`: inline text never enters the search corpus (a Hub document without a file — never a project file); `untracked-blob`: the platform does not track the blob; `unsupported`: terminal — the platform cannot index these bytes and a retry reproduces the answer; the row’s `indexing.errorCode` names the cause (`unsupported_type`, `image_no_vision`, `empty`, `not_text`, `malformed`); `in-progress`: a fresh index job is already queued or running — poll `indexing` instead.'
     ProjectFolder:
       type: object
       required:
@@ -3118,6 +3079,55 @@ components:
           type: integer
           minimum: 0
           description: Epoch milliseconds
+    Project:
+      type: object
+      required:
+      - id
+      - name
+      - teamIds
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key:
+          type: string
+          description: Immutable task-identifier prefix
+        description:
+          type: string
+        externalItemId:
+          type: string
+          description: Caller-owned external key, unique per organization — stored NFC-normalized and trimmed
+        archivedAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms — present when the project is archived — the archived marker for lookups and the list
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms — the list is ordered on it, newest first
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch ms of the last change to the project itself
+        teamIds:
+          type: array
+          items:
+            type: string
+          description: 'The audience: the teams that may see the project, by id; empty = organization-wide (every member). Owners and admins see every project regardless.'
+    ProjectFolderResult:
+      type: object
+      required:
+      - folder
+      - created
+      properties:
+        folder:
+          $ref: '#/components/schemas/ProjectFolder'
+        created:
+          type: boolean
+          description: false when an exact-name sibling already existed (200)
     Error:
       type: object
       required:
@@ -3416,80 +3426,8 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    ProjectFolderResult:
-      type: object
-      required:
-      - folder
-      - created
-      properties:
-        folder:
-          $ref: '#/components/schemas/ProjectFolder'
-        created:
-          type: boolean
-          description: false when an exact-name sibling already existed (200)
-  headers:
-    LastModified:
-      description: When the stored object was last written (HTTP date)
-      schema:
-        type: string
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
-      schema:
-        type: string
-    XRequestId:
-      description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
-      schema:
-        type: string
-    Allow:
-      description: The methods this path serves, comma-separated
-      schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ContentDisposition:
-      description: The stored file name as an RFC 6266 attachment (`filename` and `filename*`)
-      schema:
-        type: string
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    ContentLength:
-      description: The byte length of the response body
-      schema:
-        type: integer
-        minimum: 0
-    ContentRange:
-      description: The satisfied range on a 206 (`bytes <start>-<end>/<size>`); on a 416, `bytes */<size>` names the file’s size
-      schema:
-        type: string
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
-    AcceptRanges:
-      description: '`bytes` — `Range` requests are honoured'
-      schema:
-        type: string
-        example: bytes
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    XTaleApiVersion:
-      description: The version of this contract (`info.version`) the serving instance implements — semver for the wire
-      schema:
-        type: string
-        example: 3.27.0
-    WWWAuthenticate:
-      description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
-      schema:
-        type: string
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

@@ -1,8 +1,7 @@
 {
   "provider": "tale-dev",
   "sources": [
-    "_original/tale-dev-openapi-original.json",
-    "tale-dev-openapi.yml"
+    "_original/tale-dev-openapi-original.json"
   ],
   "outputs": [
     "tale-dev-agents-api-openapi.yml",
@@ -24,34 +23,34 @@
     "tale-dev-threads-api-openapi.yml",
     "tale-dev-websites-api-openapi.yml"
   ],
-  "archived": [
-    "archived openapi/tale-dev-openapi.yml"
-  ],
+  "archived": [],
   "errors": [],
   "warnings": [],
   "notes": [
+    "1 archived document(s) dropped as subsets of other archived documents",
     "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
     "tale-dev-openapi-original.json: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
-    "tale-dev-openapi.yml: upgraded openapi 3.0.3 -> OpenAPI 3.2.0",
-    "tag 'Agents' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Automations' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Browser sessions' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Contacts' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Conversations' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Documents' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Knowledge' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'MCP' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Model endpoints' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Notifications' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Organization' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Products' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Projects' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Runs' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Skills' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Tasks' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Threads' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "tag 'Websites' spans 2 source specs (tale-dev-openapi-original.json, tale-dev-openapi.yml): per-path servers applied",
-    "apis.yml register: written (+18 apis, 18 total)"
+    "apis.yml register: already-registered"
   ],
-  "skipped": []
+  "skipped": [
+    "_original/tale-dev-openapi.yml: archived document superseded by a larger archived document",
+    "tale-dev-agents-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-automations-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-browser-sessions-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-contacts-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-conversations-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-documents-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-knowledge-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-mcp-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-model-endpoints-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-notifications-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-organization-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-products-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-projects-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-runs-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-skills-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-tasks-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-threads-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "tale-dev-websites-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
 }

@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Contacts API
+  title: Tale Platform Contacts API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Contacts across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -392,13 +396,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/contacts/bulk:
     post:
       tags:
@@ -558,13 +555,6 @@ paths:
         schema:
           type: string
           pattern: ^[A-Za-z0-9_=-]{1,255}$
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/contacts/{id}/restore:
     post:
       tags:
@@ -713,13 +703,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/contacts/{id}:
     get:
       tags:
@@ -1168,18 +1151,147 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
   schemas:
-    ContactPatch:
+    BulkCreateResult:
       type: object
-      description: 'Every field optional. `null` clears any optional field, and a blank string reads as `null`; `metadata` merges per RFC 7396 while `address` is replaced whole. A patch may not clear the last of `name`, `email` and `externalId` (400 `CONTACT_IDENTITY_REQUIRED`). Send `expectedUpdatedAt` from the last contact read to update only that revision: a stale one answers 409 `CONTACT_STALE` without changing any field.'
+      required:
+      - success
+      - failed
+      - created
+      - errors
+      description: A body the schema refuses fails the whole call with 400; a row the directory refuses (a duplicate email or external id) fails that row alone and is listed under `errors` with its code. `created` here is the list of rows that landed — unlike the boolean `created` a folder or task result carries.
+      properties:
+        success:
+          type: integer
+        failed:
+          type: integer
+        created:
+          type: array
+          description: The rows that landed, by input index
+          items:
+            type: object
+            required:
+            - index
+            - id
+            properties:
+              index:
+                type: integer
+              id:
+                type: string
+        errors:
+          type: array
+          description: Every row that did not land, by input index — a row the schema refused (`INVALID_BODY`, with its `issues`) beside a row the directory refused (a duplicate); the rest landed regardless.
+          items:
+            type: object
+            required:
+            - index
+            - error
+            - errorCode
+            - contact
+            properties:
+              index:
+                type: integer
+              error:
+                type: string
+              errorCode:
+                type: string
+                enum:
+                - INVALID_BODY
+                - CONTACT_DUPLICATE_EMAIL
+                - CONTACT_DUPLICATE_EXTERNAL_ID
+                - CONTACT_CREATE_FAILED
+                - unknown
+                description: '`INVALID_BODY` — the row failed the schema (`issues` names each field); the `CONTACT_*` codes are the single create’s own refusals.'
+              issues:
+                type: array
+                description: 'Present on an `INVALID_BODY` row: the field-named problems, paths relative to the row (`email`, not `contacts.3.email`).'
+                items:
+                  type: object
+                  required:
+                  - path
+                  - message
+                  properties:
+                    path:
+                      type: string
+                    message:
+                      type: string
+              contact:
+                type: object
+                additionalProperties: true
+                description: The row as sent — a refused row is echoed whatever shape it had.
+    Contact:
+      type: object
+      required:
+      - id
+      - organizationId
+      - source
+      - tags
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        organizationId:
+          type: string
+        name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+          format: email
+        phone:
+          type:
+          - string
+          - 'null'
+        externalId:
+          type:
+          - string
+          - 'null'
+        source:
+          type: string
+        locale:
+          type:
+          - string
+          - 'null'
+        address:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        notes:
+          type:
+          - string
+          - 'null'
+        lifecycleStatus:
+          type:
+          - string
+          - 'null'
+          readOnly: true
+          description: 'Read-only, set by the platform: null while the contact is live, `expired` once the organization’s retention policy has marked it for purge (such a contact still answers reads until the purge runs), `trashed` after a delete — a trashed contact is not served at all. No input schema takes it; a CRM pipeline stage belongs in `metadata`.'
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+    ContactInput:
+      type: object
+      description: Unknown keys are refused (`INVALID_BODY`). Strings are trimmed, and a blank optional field — or one sent as `null` — reads as left out (a CSV-shaped row or a JSON export imports cleanly); the same body clears the field on a PATCH. A create needs at least one of `name`, `email` or `externalId` to file the contact under.
       additionalProperties: false
       properties:
         name:
@@ -1277,11 +1389,6 @@ components:
           - 'null'
           maxLength: 10000
           description: Trimmed
-        expectedUpdatedAt:
-          type: integer
-          minimum: 0
-          maximum: 8640000000000000
-          description: The `updatedAt` of the revision this update is based on
     Error:
       type: object
       required:
@@ -1580,9 +1687,9 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    ContactInput:
+    ContactPatch:
       type: object
-      description: Unknown keys are refused (`INVALID_BODY`). Strings are trimmed, and a blank optional field — or one sent as `null` — reads as left out (a CSV-shaped row or a JSON export imports cleanly); the same body clears the field on a PATCH. A create needs at least one of `name`, `email` or `externalId` to file the contact under.
+      description: 'Every field optional. `null` clears any optional field, and a blank string reads as `null`; `metadata` merges per RFC 7396 while `address` is replaced whole. A patch may not clear the last of `name`, `email` and `externalId` (400 `CONTACT_IDENTITY_REQUIRED`). Send `expectedUpdatedAt` from the last contact read to update only that revision: a stale one answers 409 `CONTACT_STALE` without changing any field.'
       additionalProperties: false
       properties:
         name:
@@ -1680,156 +1787,17 @@ components:
           - 'null'
           maxLength: 10000
           description: Trimmed
-    Contact:
-      type: object
-      required:
-      - id
-      - organizationId
-      - source
-      - tags
-      - createdAt
-      - updatedAt
-      properties:
-        id:
-          type: string
-        organizationId:
-          type: string
-        name:
-          type:
-          - string
-          - 'null'
-        email:
-          type:
-          - string
-          - 'null'
-          format: email
-        phone:
-          type:
-          - string
-          - 'null'
-        externalId:
-          type:
-          - string
-          - 'null'
-        source:
-          type: string
-        locale:
-          type:
-          - string
-          - 'null'
-        address:
-          type:
-          - object
-          - 'null'
-          additionalProperties: true
-        tags:
-          type: array
-          items:
-            type: string
-        metadata:
-          type:
-          - object
-          - 'null'
-          additionalProperties: true
-        notes:
-          type:
-          - string
-          - 'null'
-        lifecycleStatus:
-          type:
-          - string
-          - 'null'
-          readOnly: true
-          description: 'Read-only, set by the platform: null while the contact is live, `expired` once the organization’s retention policy has marked it for purge (such a contact still answers reads until the purge runs), `trashed` after a delete — a trashed contact is not served at all. No input schema takes it; a CRM pipeline stage belongs in `metadata`.'
-        createdAt:
+        expectedUpdatedAt:
           type: integer
           minimum: 0
-          description: Epoch milliseconds
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-    BulkCreateResult:
-      type: object
-      required:
-      - success
-      - failed
-      - created
-      - errors
-      description: A body the schema refuses fails the whole call with 400; a row the directory refuses (a duplicate email or external id) fails that row alone and is listed under `errors` with its code. `created` here is the list of rows that landed — unlike the boolean `created` a folder or task result carries.
-      properties:
-        success:
-          type: integer
-        failed:
-          type: integer
-        created:
-          type: array
-          description: The rows that landed, by input index
-          items:
-            type: object
-            required:
-            - index
-            - id
-            properties:
-              index:
-                type: integer
-              id:
-                type: string
-        errors:
-          type: array
-          description: Every row that did not land, by input index — a row the schema refused (`INVALID_BODY`, with its `issues`) beside a row the directory refused (a duplicate); the rest landed regardless.
-          items:
-            type: object
-            required:
-            - index
-            - error
-            - errorCode
-            - contact
-            properties:
-              index:
-                type: integer
-              error:
-                type: string
-              errorCode:
-                type: string
-                enum:
-                - INVALID_BODY
-                - CONTACT_DUPLICATE_EMAIL
-                - CONTACT_DUPLICATE_EXTERNAL_ID
-                - CONTACT_CREATE_FAILED
-                - unknown
-                description: '`INVALID_BODY` — the row failed the schema (`issues` names each field); the `CONTACT_*` codes are the single create’s own refusals.'
-              issues:
-                type: array
-                description: 'Present on an `INVALID_BODY` row: the field-named problems, paths relative to the row (`email`, not `contacts.3.email`).'
-                items:
-                  type: object
-                  required:
-                  - path
-                  - message
-                  properties:
-                    path:
-                      type: string
-                    message:
-                      type: string
-              contact:
-                type: object
-                additionalProperties: true
-                description: The row as sent — a refused row is echoed whatever shape it had.
+          maximum: 8640000000000000
+          description: The `updatedAt` of the revision this update is based on
   headers:
-    Allow:
-      description: The methods this path serves, comma-separated
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
       schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
+        type: integer
+        minimum: 1
     WWWAuthenticate:
       description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
       schema:
@@ -1839,17 +1807,25 @@ components:
       schema:
         type: string
         example: 3.27.0
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
       schema:
         type: string
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
     XRequestId:
       description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
       schema:
         type: string
   securitySchemes:
@@ -1857,6 +1833,3 @@ components:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml

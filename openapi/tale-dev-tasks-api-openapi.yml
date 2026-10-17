@@ -1,11 +1,15 @@
 openapi: 3.2.0
 info:
-  title: Tale Dev Tasks API
+  title: Tale Platform Tasks API
   version: 3.27.0
   contact:
     name: Tale
     url: https://tale.dev
-  description: 'Operations tagged Tasks across 2 of this provider''s published API definitions: tale-dev-openapi-original.json, tale-dev-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: 'REST access to a Tale deployment: knowledge resources, automations and their
+
+    runs, chat threads, agents, and skills — plus an MCP endpoint exposing the
+
+    same platform to MCP clients.'
 servers:
 - url: '{origin}'
   description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
@@ -256,13 +260,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}:
     get:
       tags:
@@ -597,13 +594,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}/status:
     get:
       tags:
@@ -762,13 +752,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}/external-status:
     put:
       tags:
@@ -991,13 +974,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}/comments:
     get:
       tags:
@@ -1426,13 +1402,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}/start:
     post:
       tags:
@@ -1637,13 +1606,6 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
   /api/v1/projects/{id}/tasks/{taskId}/review:
     get:
       tags:
@@ -2064,15 +2026,24 @@ paths:
               $ref: '#/components/headers/XTaleApiVersion'
             Retry-After:
               $ref: '#/components/headers/RetryAfter'
-    servers:
-    - url: '{origin}'
-      description: The deployment this document describes — `GET /openapi.json` on a running instance fills it in
-      variables:
-        origin:
-          default: https://your-host.example.com
-          description: Scheme and host of the Tale deployment
 components:
   schemas:
+    Actor:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      description: 'The verified member a machine caller acts FOR when it relays a person’s own gesture — named by e-mail, never by an id the caller made up. The door resolves the address against the organization’s members with the notification export’s rule: exactly one active, verified membership. Naming an actor at all needs `capabilities.actAs` from `/me`.'
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: The member’s e-mail address, compared without regard to case; it must be verified in Tale (403 `ACTOR_UNVERIFIED` otherwise), belong to exactly one active member of the organization (404 `ACTOR_NOT_FOUND`, 409 `ACTOR_AMBIGUOUS`, 403 `ACTOR_DISABLED`) and have access to the project the door acts in (403 `ACTOR_FORBIDDEN`)
+        userId:
+          type: string
+          maxLength: 128
+          description: 'The member’s id an earlier answer returned as `actorUserId`. Pin it: an address that has since moved to another account then answers 409 `ACTOR_REBOUND` instead of acting as its new holder'
     TaskReview:
       type: object
       required:
@@ -2171,6 +2142,583 @@ components:
           type: integer
           minimum: 0
           description: Epoch milliseconds
+    ExternalStatusDecision:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - accepted
+      additionalProperties: false
+    ExternalStatusWorkflow:
+      type: object
+      properties:
+        actions:
+          maxItems: 16
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                minLength: 1
+                maxLength: 200
+              description:
+                type: string
+                maxLength: 2000
+              i18n:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      minLength: 1
+                      maxLength: 200
+                    description:
+                      type: string
+                      maxLength: 2000
+                  additionalProperties: false
+              id:
+                type: string
+                pattern: ^[a-z][a-z0-9_]{0,63}$
+              status:
+                type: string
+                enum:
+                - backlog
+                - todo
+                - in_progress
+                - in_review
+                - done
+                - cancelled
+              fields:
+                default: []
+                maxItems: 30
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      maxLength: 64
+                      pattern: ^[A-Za-z_][A-Za-z0-9_]*$
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 200
+                    type:
+                      type: string
+                      enum:
+                      - text
+                      - number
+                      - boolean
+                      - select
+                    required:
+                      type: boolean
+                    pattern:
+                      type: string
+                      maxLength: 500
+                    default:
+                      type: string
+                      maxLength: 4000
+                    placeholder:
+                      type: string
+                      maxLength: 200
+                    help:
+                      type: string
+                      maxLength: 500
+                    options:
+                      minItems: 1
+                      maxItems: 1000
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          value:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          i18n:
+                            type: object
+                            additionalProperties:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 200
+                              additionalProperties: false
+                        required:
+                        - value
+                        - label
+                        additionalProperties: false
+                    i18n:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          placeholder:
+                            type: string
+                            maxLength: 200
+                          help:
+                            type: string
+                            maxLength: 500
+                        additionalProperties: false
+                    multiline:
+                      type: boolean
+                  required:
+                  - key
+                  - label
+                  - type
+                  additionalProperties: false
+            required:
+            - title
+            - id
+            - status
+            additionalProperties: false
+      required:
+      - actions
+      additionalProperties: false
+    TaskStatusSnapshot:
+      type: object
+      required:
+      - task
+      - revision
+      - statusChangedAt
+      - change
+      - externalStatus
+      - workflow
+      - request
+      properties:
+        task:
+          type: object
+          required:
+          - id
+          - status
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+              enum:
+              - backlog
+              - todo
+              - in_progress
+              - in_review
+              - done
+              - cancelled
+            archivedAt:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+            externalSystem:
+              type: string
+            externalId:
+              type: string
+        revision:
+          type: string
+          pattern: ^(0|[1-9]\d{0,18})$
+          description: Opaque lifecycle activity sequence; compare it as a string
+        statusChangedAt:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          description: Epoch milliseconds
+        change:
+          type:
+          - object
+          - 'null'
+          description: Latest status activity, including creation or accepted source projection; a later archival activity advances revision without replacing this actor
+          required:
+          - id
+          - action
+          - createdAt
+          - origin
+          - actor
+          properties:
+            id:
+              type: string
+            action:
+              type: string
+            createdAt:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+            origin:
+              type: string
+              enum:
+              - native
+              - external
+            actor:
+              type: object
+              required:
+              - type
+              - userId
+              - emailVerified
+              - activeMember
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - user
+                  - agent
+                userId:
+                  type: string
+                  description: Immutable activity actor id; a person only when type is user
+                email:
+                  type: string
+                  format: email
+                  description: Present only for an active verified human member of this organization
+                emailVerified:
+                  type: boolean
+                activeMember:
+                  type: boolean
+        externalStatus:
+          type:
+          - object
+          - 'null'
+          required:
+          - sourceRevision
+          - sourceStatusAt
+          - status
+          - archived
+          properties:
+            sourceRevision:
+              type: string
+              minLength: 1
+              maxLength: 512
+            sourceStatusAt:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+            status:
+              type: string
+              enum:
+              - backlog
+              - todo
+              - in_progress
+              - in_review
+              - done
+              - cancelled
+            archived:
+              type: boolean
+        workflow:
+          allOf:
+          - $ref: '#/components/schemas/ExternalStatusWorkflow'
+        request:
+          type:
+          - object
+          - 'null'
+          required:
+          - id
+          - revision
+          - statusChangeId
+          - actionId
+          - status
+          - input
+          - sourceRevision
+          - sourceStatusAt
+          - createdAt
+          - actor
+          - decision
+          properties:
+            id:
+              type: string
+              format: uuid
+            revision:
+              type: string
+            statusChangeId:
+              type: string
+              description: Actual status activity observed when submitting the form; a later archive does not replace it
+            actionId:
+              type: string
+            status:
+              type: string
+              enum:
+              - backlog
+              - todo
+              - in_progress
+              - in_review
+              - done
+              - cancelled
+            input:
+              type: object
+              additionalProperties:
+                oneOf:
+                - type: string
+                  maxLength: 4000
+                - type: number
+                - type: boolean
+              description: 'Validated declared values plus move: actionId'
+            sourceRevision:
+              type: string
+            sourceStatusAt:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+            createdAt:
+              type: integer
+              minimum: 0
+              description: Epoch milliseconds
+            actor:
+              type: object
+              required:
+              - type
+              - userId
+              - emailVerified
+              - activeMember
+              properties:
+                type:
+                  type: string
+                  enum:
+                  - user
+                userId:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                emailVerified:
+                  type: boolean
+                activeMember:
+                  type: boolean
+            decision:
+              allOf:
+              - $ref: '#/components/schemas/ExternalStatusDecision'
+    Task:
+      type: object
+      required:
+      - id
+      - title
+      - status
+      - projectId
+      - labels
+      - repeat
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+          - backlog
+          - todo
+          - in_progress
+          - in_review
+          - done
+          - cancelled
+        projectId:
+          type: string
+        externalSystem:
+          type: string
+        externalId:
+          type: string
+          description: The caller-owned natural key as stored — NFC-normalized and trimmed at intake
+        externalUrl:
+          type: string
+        description:
+          type: string
+          description: 'Markdown, as stored: each mention a mention link, `[@Ada Lovelace](mention:user/<userId>)`'
+        descriptionText:
+          type: string
+          description: 'Present with `description`: the same text with each mention read as `@` and the current name of whoever it names — for matching words or showing it as plain text'
+        labels:
+          type: array
+          items:
+            type: string
+          description: Label names as stored — the spelling each label was first created with — in the order the task carries them (the order they were sent)
+        archivedAt:
+          type: integer
+          minimum: 0
+          description: 'Epoch ms — present when the task is archived: the state `…/comments` and `…/start` refuse with 403 `TASK_ARCHIVED`. Set by `PATCH …/tasks/{taskId}` `{archived: true}` (the board’s own archive) and cleared by `{archived: false}`; read the state here before starting.'
+        startDate:
+          type: integer
+          minimum: 0
+          description: 'Epoch ms — present when the task has a start date. A task date names a calendar day: the midnight that starts it in the zone of whoever set it. Read-only on this API'
+        dueDate:
+          type: integer
+          minimum: 0
+          description: Epoch ms — present when the task has a due date, a calendar day like `startDate`. Read-only on this API
+        repeat:
+          allOf:
+          - $ref: '#/components/schemas/TaskRepeat'
+          description: 'The rule the task repeats on, or null when it does not repeat (a stored rule that no longer validates reads as none). When a repeating task is closed — Done or Cancelled, in the app or by an approved review here — ONE next task is created in To do: dated to the rule’s next occurrence, carrying the rule, the work (title, description, priority, labels, attachments, the people who still have access) and its subtasks; see `repeatNextTaskId`. Read-only on this API'
+        repeatNextTaskId:
+          type: string
+          description: 'The task that continues this one’s series — present once its close, or its due date under `createOn: "dueDate"`, created it; closing this task again creates no other. Absent before then, and again if that task is deleted'
+        createdAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+        updatedAt:
+          type: integer
+          minimum: 0
+          description: Epoch milliseconds
+    TaskRepeat:
+      oneOf:
+      - type: object
+        properties:
+          frequency:
+            type: string
+            enum:
+            - daily
+          interval:
+            type: integer
+            minimum: 1
+            maximum: 99
+          timezone:
+            type: string
+            minLength: 1
+            maxLength: 64
+          createOn:
+            type: string
+            enum:
+            - close
+            - dueDate
+        required:
+        - frequency
+        - interval
+        - timezone
+        additionalProperties: false
+      - type: object
+        properties:
+          frequency:
+            type: string
+            enum:
+            - weekly
+          interval:
+            type: integer
+            minimum: 1
+            maximum: 99
+          weekdays:
+            minItems: 1
+            maxItems: 7
+            type: array
+            items:
+              type: integer
+              minimum: 0
+              maximum: 6
+          timezone:
+            type: string
+            minLength: 1
+            maxLength: 64
+          createOn:
+            type: string
+            enum:
+            - close
+            - dueDate
+        required:
+        - frequency
+        - interval
+        - weekdays
+        - timezone
+        additionalProperties: false
+      - type: object
+        properties:
+          frequency:
+            type: string
+            enum:
+            - monthly
+          interval:
+            type: integer
+            minimum: 1
+            maximum: 99
+          monthDay:
+            type: integer
+            minimum: 1
+            maximum: 31
+          timezone:
+            type: string
+            minLength: 1
+            maxLength: 64
+          createOn:
+            type: string
+            enum:
+            - close
+            - dueDate
+        required:
+        - frequency
+        - interval
+        - monthDay
+        - timezone
+        additionalProperties: false
+      - type: object
+        properties:
+          frequency:
+            type: string
+            enum:
+            - yearly
+          interval:
+            type: integer
+            minimum: 1
+            maximum: 99
+          month:
+            type: integer
+            minimum: 1
+            maximum: 12
+          monthDay:
+            type: integer
+            minimum: 1
+            maximum: 31
+          timezone:
+            type: string
+            minLength: 1
+            maxLength: 64
+          createOn:
+            type: string
+            enum:
+            - close
+            - dueDate
+        required:
+        - frequency
+        - interval
+        - month
+        - monthDay
+        - timezone
+        additionalProperties: false
+      description: 'How a task repeats: which calendar days, never a time of day, read in `timezone` — the IANA zone of the person who set the rule. `daily` steps days; `weekly` names `weekdays` (0 is Sunday … 6 is Saturday; weeks run Monday to Sunday); `monthly` a `monthDay` (a shorter month uses its last day); `yearly` a `month` (1 is January) and a `monthDay` (29 February falls on the 28th in a common year); `interval` repeats every N of them. `createOn` is present, as `dueDate`, when the next task is also created at the start of the due date (midnight in `timezone`) while this one is still open; absent, the next task is created when this one is done or cancelled. Set in the app; read-only on this API.'
+    TaskUpsertResult:
+      type: object
+      required:
+      - task
+      properties:
+        task:
+          type: object
+          required:
+          - id
+          - created
+          properties:
+            id:
+              type: string
+            created:
+              type: boolean
+              description: false on an idempotent re-pick (200)
+        runId:
+          type:
+          - string
+          - 'null'
+          description: 'Present only when `runWorkflowSlug` was sent and the task was newly created: the started run’s id to poll, or null when the workflow did not start. Poll GET /api/v1/projects/{id}/runs/{runId}.'
+        executionId:
+          type:
+          - string
+          - 'null'
+          deprecated: true
+          description: Alias of `runId` — the name this family shipped with; present exactly when `runId` is. Read `runId`.
     Error:
       type: object
       required:
@@ -2469,613 +3017,12 @@ components:
             resetsAt:
               type: number
               description: For BUDGET_EXCEEDED, when the period resets, in epoch milliseconds — `Retry-After` names the same wait in whole seconds
-    TaskRepeat:
-      oneOf:
-      - type: object
-        properties:
-          frequency:
-            type: string
-            enum:
-            - daily
-          interval:
-            type: integer
-            minimum: 1
-            maximum: 99
-          timezone:
-            type: string
-            minLength: 1
-            maxLength: 64
-          createOn:
-            type: string
-            enum:
-            - close
-            - dueDate
-        required:
-        - frequency
-        - interval
-        - timezone
-        additionalProperties: false
-      - type: object
-        properties:
-          frequency:
-            type: string
-            enum:
-            - weekly
-          interval:
-            type: integer
-            minimum: 1
-            maximum: 99
-          weekdays:
-            minItems: 1
-            maxItems: 7
-            type: array
-            items:
-              type: integer
-              minimum: 0
-              maximum: 6
-          timezone:
-            type: string
-            minLength: 1
-            maxLength: 64
-          createOn:
-            type: string
-            enum:
-            - close
-            - dueDate
-        required:
-        - frequency
-        - interval
-        - weekdays
-        - timezone
-        additionalProperties: false
-      - type: object
-        properties:
-          frequency:
-            type: string
-            enum:
-            - monthly
-          interval:
-            type: integer
-            minimum: 1
-            maximum: 99
-          monthDay:
-            type: integer
-            minimum: 1
-            maximum: 31
-          timezone:
-            type: string
-            minLength: 1
-            maxLength: 64
-          createOn:
-            type: string
-            enum:
-            - close
-            - dueDate
-        required:
-        - frequency
-        - interval
-        - monthDay
-        - timezone
-        additionalProperties: false
-      - type: object
-        properties:
-          frequency:
-            type: string
-            enum:
-            - yearly
-          interval:
-            type: integer
-            minimum: 1
-            maximum: 99
-          month:
-            type: integer
-            minimum: 1
-            maximum: 12
-          monthDay:
-            type: integer
-            minimum: 1
-            maximum: 31
-          timezone:
-            type: string
-            minLength: 1
-            maxLength: 64
-          createOn:
-            type: string
-            enum:
-            - close
-            - dueDate
-        required:
-        - frequency
-        - interval
-        - month
-        - monthDay
-        - timezone
-        additionalProperties: false
-      description: 'How a task repeats: which calendar days, never a time of day, read in `timezone` — the IANA zone of the person who set the rule. `daily` steps days; `weekly` names `weekdays` (0 is Sunday … 6 is Saturday; weeks run Monday to Sunday); `monthly` a `monthDay` (a shorter month uses its last day); `yearly` a `month` (1 is January) and a `monthDay` (29 February falls on the 28th in a common year); `interval` repeats every N of them. `createOn` is present, as `dueDate`, when the next task is also created at the start of the due date (midnight in `timezone`) while this one is still open; absent, the next task is created when this one is done or cancelled. Set in the app; read-only on this API.'
-    Task:
-      type: object
-      required:
-      - id
-      - title
-      - status
-      - projectId
-      - labels
-      - repeat
-      - createdAt
-      - updatedAt
-      properties:
-        id:
-          type: string
-        title:
-          type: string
-        status:
-          type: string
-          enum:
-          - backlog
-          - todo
-          - in_progress
-          - in_review
-          - done
-          - cancelled
-        projectId:
-          type: string
-        externalSystem:
-          type: string
-        externalId:
-          type: string
-          description: The caller-owned natural key as stored — NFC-normalized and trimmed at intake
-        externalUrl:
-          type: string
-        description:
-          type: string
-          description: 'Markdown, as stored: each mention a mention link, `[@Ada Lovelace](mention:user/<userId>)`'
-        descriptionText:
-          type: string
-          description: 'Present with `description`: the same text with each mention read as `@` and the current name of whoever it names — for matching words or showing it as plain text'
-        labels:
-          type: array
-          items:
-            type: string
-          description: Label names as stored — the spelling each label was first created with — in the order the task carries them (the order they were sent)
-        archivedAt:
-          type: integer
-          minimum: 0
-          description: 'Epoch ms — present when the task is archived: the state `…/comments` and `…/start` refuse with 403 `TASK_ARCHIVED`. Set by `PATCH …/tasks/{taskId}` `{archived: true}` (the board’s own archive) and cleared by `{archived: false}`; read the state here before starting.'
-        startDate:
-          type: integer
-          minimum: 0
-          description: 'Epoch ms — present when the task has a start date. A task date names a calendar day: the midnight that starts it in the zone of whoever set it. Read-only on this API'
-        dueDate:
-          type: integer
-          minimum: 0
-          description: Epoch ms — present when the task has a due date, a calendar day like `startDate`. Read-only on this API
-        repeat:
-          allOf:
-          - $ref: '#/components/schemas/TaskRepeat'
-          description: 'The rule the task repeats on, or null when it does not repeat (a stored rule that no longer validates reads as none). When a repeating task is closed — Done or Cancelled, in the app or by an approved review here — ONE next task is created in To do: dated to the rule’s next occurrence, carrying the rule, the work (title, description, priority, labels, attachments, the people who still have access) and its subtasks; see `repeatNextTaskId`. Read-only on this API'
-        repeatNextTaskId:
-          type: string
-          description: 'The task that continues this one’s series — present once its close, or its due date under `createOn: "dueDate"`, created it; closing this task again creates no other. Absent before then, and again if that task is deleted'
-        createdAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-        updatedAt:
-          type: integer
-          minimum: 0
-          description: Epoch milliseconds
-    Actor:
-      type: object
-      additionalProperties: false
-      required:
-      - email
-      description: 'The verified member a machine caller acts FOR when it relays a person’s own gesture — named by e-mail, never by an id the caller made up. The door resolves the address against the organization’s members with the notification export’s rule: exactly one active, verified membership. Naming an actor at all needs `capabilities.actAs` from `/me`.'
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 320
-          description: The member’s e-mail address, compared without regard to case; it must be verified in Tale (403 `ACTOR_UNVERIFIED` otherwise), belong to exactly one active member of the organization (404 `ACTOR_NOT_FOUND`, 409 `ACTOR_AMBIGUOUS`, 403 `ACTOR_DISABLED`) and have access to the project the door acts in (403 `ACTOR_FORBIDDEN`)
-        userId:
-          type: string
-          maxLength: 128
-          description: 'The member’s id an earlier answer returned as `actorUserId`. Pin it: an address that has since moved to another account then answers 409 `ACTOR_REBOUND` instead of acting as its new holder'
-    ExternalStatusWorkflow:
-      type: object
-      properties:
-        actions:
-          maxItems: 16
-          type: array
-          items:
-            type: object
-            properties:
-              title:
-                type: string
-                minLength: 1
-                maxLength: 200
-              description:
-                type: string
-                maxLength: 2000
-              i18n:
-                type: object
-                additionalProperties:
-                  type: object
-                  properties:
-                    title:
-                      type: string
-                      minLength: 1
-                      maxLength: 200
-                    description:
-                      type: string
-                      maxLength: 2000
-                  additionalProperties: false
-              id:
-                type: string
-                pattern: ^[a-z][a-z0-9_]{0,63}$
-              status:
-                type: string
-                enum:
-                - backlog
-                - todo
-                - in_progress
-                - in_review
-                - done
-                - cancelled
-              fields:
-                default: []
-                maxItems: 30
-                type: array
-                items:
-                  type: object
-                  properties:
-                    key:
-                      type: string
-                      maxLength: 64
-                      pattern: ^[A-Za-z_][A-Za-z0-9_]*$
-                    label:
-                      type: string
-                      minLength: 1
-                      maxLength: 200
-                    type:
-                      type: string
-                      enum:
-                      - text
-                      - number
-                      - boolean
-                      - select
-                    required:
-                      type: boolean
-                    pattern:
-                      type: string
-                      maxLength: 500
-                    default:
-                      type: string
-                      maxLength: 4000
-                    placeholder:
-                      type: string
-                      maxLength: 200
-                    help:
-                      type: string
-                      maxLength: 500
-                    options:
-                      minItems: 1
-                      maxItems: 1000
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          value:
-                            type: string
-                            minLength: 1
-                            maxLength: 200
-                          label:
-                            type: string
-                            minLength: 1
-                            maxLength: 200
-                          i18n:
-                            type: object
-                            additionalProperties:
-                              type: object
-                              properties:
-                                label:
-                                  type: string
-                                  minLength: 1
-                                  maxLength: 200
-                              additionalProperties: false
-                        required:
-                        - value
-                        - label
-                        additionalProperties: false
-                    i18n:
-                      type: object
-                      additionalProperties:
-                        type: object
-                        properties:
-                          label:
-                            type: string
-                            minLength: 1
-                            maxLength: 200
-                          placeholder:
-                            type: string
-                            maxLength: 200
-                          help:
-                            type: string
-                            maxLength: 500
-                        additionalProperties: false
-                    multiline:
-                      type: boolean
-                  required:
-                  - key
-                  - label
-                  - type
-                  additionalProperties: false
-            required:
-            - title
-            - id
-            - status
-            additionalProperties: false
-      required:
-      - actions
-      additionalProperties: false
-    TaskUpsertResult:
-      type: object
-      required:
-      - task
-      properties:
-        task:
-          type: object
-          required:
-          - id
-          - created
-          properties:
-            id:
-              type: string
-            created:
-              type: boolean
-              description: false on an idempotent re-pick (200)
-        runId:
-          type:
-          - string
-          - 'null'
-          description: 'Present only when `runWorkflowSlug` was sent and the task was newly created: the started run’s id to poll, or null when the workflow did not start. Poll GET /api/v1/projects/{id}/runs/{runId}.'
-        executionId:
-          type:
-          - string
-          - 'null'
-          deprecated: true
-          description: Alias of `runId` — the name this family shipped with; present exactly when `runId` is. Read `runId`.
-    TaskStatusSnapshot:
-      type: object
-      required:
-      - task
-      - revision
-      - statusChangedAt
-      - change
-      - externalStatus
-      - workflow
-      - request
-      properties:
-        task:
-          type: object
-          required:
-          - id
-          - status
-          properties:
-            id:
-              type: string
-            status:
-              type: string
-              enum:
-              - backlog
-              - todo
-              - in_progress
-              - in_review
-              - done
-              - cancelled
-            archivedAt:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-            externalSystem:
-              type: string
-            externalId:
-              type: string
-        revision:
-          type: string
-          pattern: ^(0|[1-9]\d{0,18})$
-          description: Opaque lifecycle activity sequence; compare it as a string
-        statusChangedAt:
-          type:
-          - integer
-          - 'null'
-          minimum: 0
-          description: Epoch milliseconds
-        change:
-          type:
-          - object
-          - 'null'
-          description: Latest status activity, including creation or accepted source projection; a later archival activity advances revision without replacing this actor
-          required:
-          - id
-          - action
-          - createdAt
-          - origin
-          - actor
-          properties:
-            id:
-              type: string
-            action:
-              type: string
-            createdAt:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-            origin:
-              type: string
-              enum:
-              - native
-              - external
-            actor:
-              type: object
-              required:
-              - type
-              - userId
-              - emailVerified
-              - activeMember
-              properties:
-                type:
-                  type: string
-                  enum:
-                  - user
-                  - agent
-                userId:
-                  type: string
-                  description: Immutable activity actor id; a person only when type is user
-                email:
-                  type: string
-                  format: email
-                  description: Present only for an active verified human member of this organization
-                emailVerified:
-                  type: boolean
-                activeMember:
-                  type: boolean
-        externalStatus:
-          type:
-          - object
-          - 'null'
-          required:
-          - sourceRevision
-          - sourceStatusAt
-          - status
-          - archived
-          properties:
-            sourceRevision:
-              type: string
-              minLength: 1
-              maxLength: 512
-            sourceStatusAt:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-            status:
-              type: string
-              enum:
-              - backlog
-              - todo
-              - in_progress
-              - in_review
-              - done
-              - cancelled
-            archived:
-              type: boolean
-        workflow:
-          allOf:
-          - $ref: '#/components/schemas/ExternalStatusWorkflow'
-        request:
-          type:
-          - object
-          - 'null'
-          required:
-          - id
-          - revision
-          - statusChangeId
-          - actionId
-          - status
-          - input
-          - sourceRevision
-          - sourceStatusAt
-          - createdAt
-          - actor
-          - decision
-          properties:
-            id:
-              type: string
-              format: uuid
-            revision:
-              type: string
-            statusChangeId:
-              type: string
-              description: Actual status activity observed when submitting the form; a later archive does not replace it
-            actionId:
-              type: string
-            status:
-              type: string
-              enum:
-              - backlog
-              - todo
-              - in_progress
-              - in_review
-              - done
-              - cancelled
-            input:
-              type: object
-              additionalProperties:
-                oneOf:
-                - type: string
-                  maxLength: 4000
-                - type: number
-                - type: boolean
-              description: 'Validated declared values plus move: actionId'
-            sourceRevision:
-              type: string
-            sourceStatusAt:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-            createdAt:
-              type: integer
-              minimum: 0
-              description: Epoch milliseconds
-            actor:
-              type: object
-              required:
-              - type
-              - userId
-              - emailVerified
-              - activeMember
-              properties:
-                type:
-                  type: string
-                  enum:
-                  - user
-                userId:
-                  type: string
-                email:
-                  type: string
-                  format: email
-                emailVerified:
-                  type: boolean
-                activeMember:
-                  type: boolean
-            decision:
-              allOf:
-              - $ref: '#/components/schemas/ExternalStatusDecision'
-    ExternalStatusDecision:
-      type: object
-      properties:
-        accepted:
-          type: boolean
-        reason:
-          type: string
-          minLength: 1
-          maxLength: 2000
-      required:
-      - accepted
-      additionalProperties: false
   headers:
-    Allow:
-      description: The methods this path serves, comma-separated
+    RetryAfter:
+      description: How long to wait before retrying, in whole seconds
       schema:
-        type: string
-        example: GET, POST, HEAD, OPTIONS
-    ETag:
-      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
-      schema:
-        type: string
-    Location:
-      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
-      schema:
-        type: string
+        type: integer
+        minimum: 1
     WWWAuthenticate:
       description: 'The challenge RFC 9110 §11.6.1 requires of a 401: `Bearer`, or `Bearer error="invalid_token"` when a key was presented and refused'
       schema:
@@ -3085,17 +3032,25 @@ components:
       schema:
         type: string
         example: 3.27.0
-    RetryAfter:
-      description: How long to wait before retrying, in whole seconds
-      schema:
-        type: integer
-        minimum: 1
-    CacheControl:
-      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
+    ETag:
+      description: 'A validator: over the answer’s bytes on a JSON read, the stored object’s tag on a download. Send it back as `If-None-Match` — as received; the weak and edge-suffixed forms match too — to be told 304 when nothing changed.'
       schema:
         type: string
+    Location:
+      description: The created resource’s own path, relative to the request URL — follow it with GET whatever shape the 201 body has
+      schema:
+        type: string
+    Allow:
+      description: The methods this path serves, comma-separated
+      schema:
+        type: string
+        example: GET, POST, HEAD, OPTIONS
     XRequestId:
       description: The request id the platform logged this call under — quote it when reporting a problem. Echoes a sane `X-Request-Id` the caller sent.
+      schema:
+        type: string
+    CacheControl:
+      description: '`private, no-cache` on a validated read and on a download: keep the answer, revalidate it before reuse, and let no shared cache keep it. Every other answer says `no-store`.'
       schema:
         type: string
   securitySchemes:
@@ -3103,6 +3058,3 @@ components:
       type: http
       scheme: bearer
       description: An organization API key. Create one in Settings → API. Pasted into the explorer on /docs it stays in the page’s memory only and is forgotten on reload — it is never stored.
-x-refined-from:
-- tale-dev-openapi-original.json
-- tale-dev-openapi.yml
