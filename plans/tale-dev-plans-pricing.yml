@@ -24,3 +24,22 @@ plans:
   price_text: CHF 12 (EUR 14) per user/month
   features: [Self-hosted or cloud, Professional operation by ISO 27001-certified Ruler GmbH, Data processing agreement (DPA), Email, phone & remote support]
   limits: [1 TB + CHF 10/TB/month additional storage]
+x-canonical:
+  generated: '2026-10-18'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - free
+  units: []
+  plans:
+  - name: Community
+    access: other
+    model: free
+    model_how: derived
+    units: []
+    periods: []
+  - name: Enterprise
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods: []
