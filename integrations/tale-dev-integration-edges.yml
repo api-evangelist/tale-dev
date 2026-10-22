@@ -6,7 +6,7 @@ edges:
   channel: provider-built
   relationship: compatible
   direction: provider-built
-  evidence: https://github.com/api-evangelist/tale-dev/blob/main/openapi/tale-dev-model-endpoints-api-openapi.yml#L26
+  evidence: https://github.com/api-evangelist/tale-dev/blob/main/openapi/tale-dev-model-endpoints-api-openapi.yml#L30
   contract_reference:
     repo: tale-dev
     spec_file: tale-dev-model-endpoints-api-openapi.yml
@@ -14,7 +14,7 @@ edges:
     value: OpenAI-compatible
     note: 'tale-dev declares OpenAI compatibility: ''summary: Create a chat completion (OpenAI-compatible)'''
     detected_by: sweep-model-routing.py
-    detected: '2026-10-15'
+    detected: '2026-10-19'
   detected_by: sweep-model-routing.py
   first_seen: '2026-10-13'
 generated: '2026-10-13'
